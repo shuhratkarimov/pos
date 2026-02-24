@@ -21,7 +21,17 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/frontend
-            git pull origin frontend
+
+            # 1️⃣ VPS’da branch bilan to‘liq moslash
+            git fetch --all
+            git reset --hard origin/frontend
+
+            # 2️⃣ Dependencies yangilash
             npm install
+
+            # 3️⃣ Build qilish
             npm run build
-            pm2 restart frontend
+
+            # 4️⃣ PM2 processni ishonchli restart qilish
+            pm2 delete frontend || true
+            pm2 start npm --name frontend -- run start
