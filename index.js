@@ -9,7 +9,7 @@ const cookieParser = require("cookie-parser");
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
-
+console.log("CI-CD ishladi!")
 
 app.use("/api/products", require("./router/product.routes"));
 app.use("/api/debts", require("./router/debt.routes"));
