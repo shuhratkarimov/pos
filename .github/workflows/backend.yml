@@ -21,6 +21,14 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/backend
-            git pull origin main
+
+            # 1️⃣ VPS’dagi local o‘zgarishlarni tashlab, main branch bilan to‘liq moslash
+            git fetch --all
+            git reset --hard origin/main
+
+            # 2️⃣ Dependencies yangilash
             npm install
-            pm2 restart pos-backend
+
+            # 3️⃣ PM2 processni ishonchli restart qilish
+            pm2 delete pos-backend || true
+            pm2 start index.js --name pos-backend
