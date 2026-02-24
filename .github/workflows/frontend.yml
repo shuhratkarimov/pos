@@ -1,0 +1,27 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - frontend
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /var/www/frontend
+            git pull origin frontend
+            npm install
+            npm run build
+            pm2 restart frontend
