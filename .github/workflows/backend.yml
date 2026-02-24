@@ -27,7 +27,7 @@ jobs:
             git reset --hard origin/main
 
             # 2️⃣ Dependencies yangilash
-            npm install
+            npm install --production
 
             # 3️⃣ PM2 processni ishonchli restart qilish
             pm2 delete pos-backend || true
