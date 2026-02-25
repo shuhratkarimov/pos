@@ -6,7 +6,6 @@ const { sendSMS } = require('../providers/devsms');
 const SMS_COST = 200;
 
 async function safeSendSms(storeId, phone, message) {
-  console.log(storeId, phone, message);
   if (!mongoose.isValidObjectId(storeId)) {
     throw new Error('Noto‘g‘ri storeId formatida');
   }

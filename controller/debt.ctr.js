@@ -62,10 +62,8 @@ async function deleteDebt(req, res) {
 
 async function sendDebtSms(req, res) {
     try {
-        console.log(req.body)
         const { phone, message } = req.body
         const result = await safeSendSms(req.user.shop, phone, message)
-        console.log(result)
         res.status(200).json(result)
     } catch (err) {
         console.log(err)

@@ -64,8 +64,6 @@ const deleteShop = async (req, res) => {
 const updateShopName = async (req, res) => {
     try {
         const { shopName } = req.body
-        console.log(req.user)
-        console.log(shopName)
         const shop = await Shop.findByIdAndUpdate(req.user.shop, { shopName })
         res.json(shop)
     } catch (error) {
