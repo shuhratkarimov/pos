@@ -34,7 +34,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
         audioCtx.resume()
       }
     } catch (err) {
-      console.warn('Beep ovozi ishlamadi:', err)
+      alert('Audio error: ' + err)
       // fallback: oddiy alert yoki hech narsa qilmaslik
     }
   }
@@ -67,9 +67,10 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
               onClose()
             })
           },
-          (err) => {}
+          (err) => { }
         )
       } catch (err) {
+        alert('Scanner error: ' + err)
         console.error('Scanner start xatosi:', err)
         onClose()
       }
@@ -79,7 +80,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
 
     return () => {
       if (scannerRef.current && isScanningRef.current) {
-        scannerRef.current.stop().catch(() => {})
+        scannerRef.current.stop().catch(() => { })
       }
       scannerRef.current = null
       isScanningRef.current = false
@@ -94,7 +95,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
           <button
             onClick={() => {
               if (scannerRef.current) {
-                scannerRef.current.stop().catch(() => {})
+                scannerRef.current.stop().catch(() => { })
               }
               onClose()
             }}
