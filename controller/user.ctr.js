@@ -45,10 +45,10 @@ const getAllUsers = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const { username, password } = req.body
+    const { username, password, phoneNumber } = req.body
     const isUsernameExist = await User.findOne({ username })
     if (isUsernameExist) return res.status(400).json({ message: 'Username already exists' })
-    const user = await User.create({ username, password })
+    const user = await User.create({ username, password, phoneNumber })
     res.json(user)
   } catch (error) {
     res.status(500).json({ message: error.message })
