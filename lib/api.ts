@@ -24,7 +24,7 @@ export interface Product {
   _id: string
   name: string
   price: number
-  code: string
+  code: string | undefined
   boughtPrice?: number
   stock: number
   measure: string

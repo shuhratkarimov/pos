@@ -24,6 +24,7 @@ import {
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { DebtRecord } from '@/lib/api'
+import BarcodeScanner from '@/components/BarcodeScanner'
 
 type CustomPriceItem = CartItem & {
   isCustom: boolean;
@@ -54,6 +55,7 @@ export default function Home() {
   const [selectedDebt, setSelectedDebt] = useState<DebtRecord | null>(null)
   const [debtRecords, setDebtRecords] = useState<DebtRecord[]>([])
   const [debtLoading, setDebtLoading] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
 
   const loadDebtsForModal = async () => {
     setDebtLoading(true)
@@ -86,6 +88,67 @@ export default function Home() {
     checkAuth();
   }, []);
 
+  const generateReceiptHTML = (invoice: Omit<Invoice, '_id'> | any) => {
+    return `
+      <html>
+        <head>
+          <title>Chek</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
+            /* ... qolgan stillar o‘zgarmasdan qoladi ... */
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <div class="header">
+              <h1>SAVDO CHEKI</h1>
+              <div>${new Date(invoice.date).toLocaleString('ru-RU')}</div>
+              <div>${shopName?.toUpperCase() || 'Do‘kon'}</div>
+            </div>
+            
+            <div class="items">
+              ${invoice.items.map((item: any) => `
+                <div class="item-row">
+                  <div class="item-name">${item.name}</div>
+                  <div class="item-details">
+                    ${item.quantity} ${item.measure} × ${item.price.toLocaleString()} = ${item.subtotal.toLocaleString()} so'm
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            
+            <div class="totals">
+              <div class="final-total">
+                <span>JAMI:</span>
+                <span>${invoice.total.toLocaleString()} so'm</span>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p>Xaridingiz uchun rahmat!</p>
+              <p>${new Date().getFullYear()} ${shopName?.toUpperCase() || ''}</p>
+            </div>
+          </div>
+          
+          <script>
+            window.onload = () => {
+              window.print();
+              setTimeout(() => window.close(), 1200);
+            }
+          </script>
+        </body>
+      </html>
+    `
+  }
+
+  const printReceipt = (invoice: Omit<Invoice, '_id'> | any) => {
+    const printWindow = window.open('', '_blank', 'width=380,height=600,scrollbars=yes')
+    if (printWindow) {
+      printWindow.document.write(generateReceiptHTML(invoice))
+      printWindow.document.close()
+    }
+  }
+
   useEffect(() => {
     const getMe = async () => {
       try {
@@ -117,7 +180,7 @@ export default function Home() {
       const filtered = products.filter(
         (product) =>
           product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.code.toLowerCase().includes(searchQuery.toLowerCase())
+          (product.code && product.code.toLowerCase().includes(searchQuery.toLowerCase()))
       )
       setFilteredProducts(filtered.slice(0, 30))
     } else {
@@ -149,9 +212,9 @@ export default function Home() {
 
   const handleDebtSubmit = async (mode: 'new' | 'update', debtId?: string) => {
     if (cartItems.length === 0) return toast.error('Savatcha bo‘sh')
-  
+
     const total = cartStats.totalAmount
-  
+
     const invoice: Omit<Invoice, '_id'> = {
       date: new Date().toISOString(),
       items: cartItems.map(item => ({
@@ -166,12 +229,12 @@ export default function Home() {
       total,
       paymentMethod: 'qarz'
     }
-  
+
     try {
       // Chek saqlash
       const savedInvoice = await addInvoice(invoice)
       printReceipt(invoice)  // chop etish
-  
+
       // URL parametrlarini tayyorlash
       const query = new URLSearchParams({
         mode,
@@ -179,18 +242,18 @@ export default function Home() {
         invoiceId: savedInvoice._id || '',  // agar backend _id qaytarsa
         items: encodeURIComponent(JSON.stringify(cartItems))
       })
-  
+
       if (mode === 'update' && debtId) {
         query.set('id', debtId)
       }
-  
+
       // Sahifaga o'tish
       router.push(`/debt?${query.toString()}`)
-  
+
       // Savatchani tozalash va yangilash
       setCartItems([])
       await loadAllData()
-  
+
       toast.success(`Chek saqlandi va ${mode === 'new' ? 'yangi qarz' : 'qarz yangilandi'}!`)
     } catch (err: any) {
       toast.error('Xatolik: ' + (err.message || 'Noma\'lum xato'))
@@ -254,6 +317,46 @@ export default function Home() {
       `${product.name} savatchaga qo'shildi (${quantity} ${product.measure})`
     )
   }
+
+  useEffect(() => {
+    let barcodeBuffer = ''
+    let timeout: NodeJS.Timeout
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Modal ochiq bo‘lsa – hech qanday global skanerni ishlatmaymiz
+      if (showKeypad || showCustomPrice || showDebtModal || showScanner) {
+        return
+      }
+
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 3) {
+          const scannedCode = barcodeBuffer.trim()
+          const product = products.find(p => p.code === scannedCode)
+
+          if (product) {
+            handleAddToCart(product, 1)
+            toast.success(`${product.name} qo‘shildi (scan orqali)`)
+          } else {
+            toast.error(`Kod topilmadi: ${scannedCode}`)
+          }
+        }
+        barcodeBuffer = ''
+        return
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        barcodeBuffer += e.key
+      }
+
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        barcodeBuffer = ''
+      }, 150)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [products, showKeypad, showCustomPrice, showDebtModal, showScanner, handleAddToCart])
 
   const handleKeypadInput = (value: string | number) => {
     if (value === 'clear') {
@@ -436,138 +539,6 @@ export default function Home() {
     }
   }
 
-  const printReceipt = (invoice: Omit<Invoice, '_id'>) => {
-    const printWindow = window.open('', '_blank', 'width=400,height=600')
-
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Chek</title>
-            <style>
-              @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-family: 'Roboto Mono', monospace;
-              }
-              body { 
-                background: white; 
-                color: black; 
-                padding: 15px;
-                font-size: 14px;
-              }
-              .receipt {
-                max-width: 300px;
-                margin: 0 auto;
-              }
-              .header {
-                text-align: center;
-                padding-bottom: 10px;
-                border-bottom: 1px dashed #000;
-                margin-bottom: 15px;
-              }
-              .header h1 {
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 5px;
-              }
-              .items {
-                margin: 15px 0;
-              }
-              .item-row {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 8px;
-                padding-bottom: 5px;
-                border-bottom: 1px dotted #ccc;
-              }
-              .item-name {
-                flex: 2;
-                font-weight: 500;
-              }
-              .item-details {
-                flex: 1;
-                text-align: right;
-              }
-              .totals {
-                margin-top: 20px;
-                padding-top: 10px;
-                border-top: 2px solid #000;
-              }
-              .total-row {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 5px;
-              }
-              .final-total {
-                font-weight: bold;
-                font-size: 18px;
-                margin-top: 10px;
-                padding-top: 10px;
-                border-top: 1px dashed #000;
-              }
-              .footer {
-                text-align: center;
-                margin-top: 20px;
-                padding-top: 10px;
-                border-top: 1px solid #000;
-                font-size: 12px;
-                opacity: 0.7;
-              }
-              @media print {
-                body {
-                  margin: 0;
-                  padding: 10px;
-                }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="receipt">
-              <div class="header">
-                <h1>SAVDO CHEKI</h1>
-                <div>${new Date(invoice.date).toLocaleString('ru-RU')}</div>
-              </div>
-              
-              <div class="items">
-                ${invoice.items.map(item => `
-                  <div class="item-row">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-details">
-                      ${item.quantity} x ${item.price.toLocaleString()} = ${item.subtotal.toLocaleString()} so'm
-                    </div>
-                  </div>
-                `).join('')}
-              </div>
-              
-              <div class="totals">
-                <div class="final-total">
-                  <span>JAMI:</span>
-                  <span>${invoice.total.toLocaleString()} so'm</span>
-                </div>
-              </div>
-              
-              <div class="footer">
-                <p>Xaridingiz uchun rahmat!</p>
-                <p>${new Date().getFullYear()} ${shopName?.toUpperCase()} do'koni</p>
-              </div>
-            </div>
-            
-            <script>
-              window.onload = () => {
-                window.print();
-                setTimeout(() => window.close(), 1000);
-              }
-            </script>
-          </body>
-        </html>
-      `)
-      printWindow.document.close()
-    }
-  }
-
   const cartStats = {
     totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0),
     totalAmount: cartItems.reduce((sum, item) => sum + item.subtotal, 0),
@@ -598,6 +569,12 @@ export default function Home() {
             </div>
 
             <div className="flex gap-3">
+              <button
+                onClick={() => setShowScanner(true)}
+                className="bg-blue-500 text-white px-4 py-2 rounded-xl"
+              >
+                Kamera orqali scan
+              </button>
               <button
                 onClick={loadAllData}
                 disabled={loading}
@@ -664,7 +641,7 @@ export default function Home() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1">
                           <Hash className="text-gray-400" size={10} />
-                          <span className="text-xs font-mono text-gray-500">{product.code}</span>
+                          <span className="text-[0.7rem] font-mono text-gray-500">{product?.code || 'Barcode yo`q'}</span>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded ${product.stock === 0 ? 'bg-red-100 text-red-700' :
                           product.stock < 10 ? 'bg-yellow-100 text-yellow-700' :
@@ -1004,7 +981,8 @@ export default function Home() {
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  handleKeypadInput('enter');        // ← bu sizda allaqachon bor funksiya
+                  handleKeypadInput('enter');
+                  addCustomPriceItem()       // ← bu sizda allaqachon bor funksiya
                   e.preventDefault();                // ikki marta submit bo'lmasligi uchun
                 } else if (e.key === 'Escape') {
                   setShowKeypad(false);
@@ -1287,6 +1265,24 @@ export default function Home() {
         </div>
       )}
 
+      {showScanner && (
+        <BarcodeScanner
+          key="barcode-scanner-active"   // ← bu juda muhim! Har safar yangi instansiya yaratiladi
+          onScan={(code) => {
+            const product = products.find(p => p.code === code)
+            if (product) {
+              handleAddToCart(product, 1)
+              toast.success(`Scan orqali qo‘shildi: ${product.name}`)
+            } else {
+              toast.error(`Mahsulot topilmadi: ${code}`)
+            }
+            // muhim: scan muvaffaqiyatli bo‘lsa ham modalni yopish mumkin (ixtiyoriy)
+            // setShowScanner(false)
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
       {/* Custom Price Modal - Light Theme */}
       {showCustomPrice && customPriceProduct && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1302,7 +1298,8 @@ export default function Home() {
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  handleKeypadInput('enter');        // ← bu sizda allaqachon bor funksiya
+                  handleKeypadInput('enter');
+                  addCustomPriceItem()       // ← bu sizda allaqachon bor funksiya
                   e.preventDefault();                // ikki marta submit bo'lmasligi uchun
                 } else if (e.key === 'Escape') {
                   setShowCustomPrice(false);

@@ -35,10 +35,12 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
+  Printer
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { CSVLink } from "react-csv"
+import BarcodeSheet from '@/components/BarcodeSheet'
 
 type SortField = 'name' | 'code' | 'price' | 'boughtPrice' | 'stock' | 'lastUpdated'
 type SortDirection = 'asc' | 'desc'
@@ -66,7 +68,8 @@ export default function ProductsPage() {
   const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const observerTarget = useRef<HTMLDivElement>(null)
-
+  const barcodeRef = useRef<HTMLDivElement>(null)
+  const selectedProductsArray = Array.from(selectedProducts).map(id => products.find(p => p._id === id)).filter((p): p is Product => Boolean(p))
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -75,6 +78,157 @@ export default function ProductsPage() {
     measure: 'dona',
     boughtPrice: '',
   })
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false)
+  const [printSize, setPrintSize] = useState<'small' | 'large'>('small')
+  const [printMode, setPrintMode] = useState<'individual' | 'a4'>('individual');
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait')
+
+  const handleGenerateBarcode = () => {
+    const newCode = generateBarcode()
+
+    setFormData(prev => ({
+      ...prev,
+      code: newCode
+    }))
+  }
+
+  const handlePrintBarcodes = () => {
+    if (selectedProductsArray.length === 0) return;
+
+    const isSmall = printSize === 'small';
+    const labelWidthMM = isSmall ? 30 : 40;
+    const labelHeightMM = isSmall ? 50 : 60;
+
+    const validProducts = selectedProductsArray
+      .filter(p => p.code?.trim())
+      .map(p => ({ name: p.name.trim(), code: p.code!.trim() }));
+
+    if (validProducts.length === 0) {
+      toast.error('Tanlangan mahsulotlarda barcode kodi yo‘q');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Yangi oynani ochib bo‘lmadi (popup blocker?)');
+      return;
+    }
+
+    let htmlContent = `
+  <!DOCTYPE html>
+  <html lang="uz">
+  <head>
+    <meta charset="UTF-8">
+    <title>Barcode chop etish — ${validProducts.length} ta</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+      @page { 
+  size: A4 ${printMode === 'a4' ? orientation : 'portrait'}; 
+  margin: ${printMode === 'a4' ? '10mm' : '0mm'}; 
+}
+      body { margin:0; padding:0; font-family:Arial, sans-serif; background:#f9fafb; }
+    `;
+
+    if (printMode === 'individual') {
+      // Alohida stikerlar — har biri o'z sahifasida yoki bitta sahifada vertikal
+      htmlContent += `
+      .container { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        gap: 15mm; 
+        padding: 10mm; 
+      }
+      .label { 
+        width: ${labelWidthMM}mm; 
+        height: ${labelHeightMM}mm; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 6px; 
+        background: white; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; 
+        padding: 4mm 3mm; 
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
+        page-break-after: always; 
+      }
+      .label svg { width: 92%; height: ${labelHeightMM - 18}mm; }
+      .name { margin-top: 4mm; font-size: ${isSmall ? 9 : 11}pt; font-weight: bold; text-align: center; max-width: 100%; line-height: 1.25; }
+      `;
+    } else {
+      // A4 varaq rejimi — grid bilan joylashtirish
+      htmlContent += `
+      .page { 
+        width: 210mm; 
+        height: 297mm; 
+        box-sizing: border-box; 
+        padding: 10mm; 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, ${labelWidthMM}mm); 
+        grid-auto-rows: ${labelHeightMM}mm; 
+        gap: 5mm 7mm; 
+        justify-content: center; 
+        align-content: start; 
+      }
+      .label { 
+        width: ${labelWidthMM}mm; 
+        height: ${labelHeightMM}mm; 
+        border: 1px dashed #d1d5db; 
+        border-radius: 4px; 
+        background: white; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; 
+        padding: 3mm 2mm; 
+        box-sizing: border-box; 
+        page-break-inside: avoid; 
+      }
+      .label svg { width: 90%; height: ${labelHeightMM - 18}mm; }
+      .name { margin-top: 3mm; font-size: ${isSmall ? 8.5 : 10}pt; font-weight: 600; text-align: center; line-height: 1.2; }
+      `;
+    }
+
+    htmlContent += `
+    </style>
+  </head>
+  <body>
+    ${printMode === 'individual' ? '<div class="container">' : '<div class="page">'}
+  
+      ${validProducts.map((p, i) => `
+        <div class="label">
+          <svg id="bc-${i}"></svg>
+          <div class="name">${p.name}</div>
+        </div>
+      `).join('')}
+  
+    </div>
+  
+    <script>
+      ${validProducts.map((p, i) => `
+        JsBarcode("#bc-${i}", "${p.code.replace(/"/g, '\\"')}", {
+          format: "CODE128",
+          width: 2.1,
+          height: ${labelHeightMM - 20},
+          displayValue: true,
+          fontSize: ${isSmall ? 12 : 14},
+          margin: 6,
+          textMargin: 3,
+          textAlign: "center"
+        });
+      `).join('\n    ')}
+  
+      setTimeout(() => window.print(), 900);
+    </script>
+  </body>
+  </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    setShowBarcodeModal(false);
+  };
 
   useEffect(() => {
     loadProducts()
@@ -143,7 +297,7 @@ export default function ProductsPage() {
     if (search) {
       filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.code.toLowerCase().includes(search.toLowerCase())
+        (p.code && p.code.toLowerCase().includes(search.toLowerCase()))
       )
     }
 
@@ -172,8 +326,8 @@ export default function ProductsPage() {
           bValue = b.name.toLowerCase()
           break
         case 'code':
-          aValue = a.code.toLowerCase()
-          bValue = b.code.toLowerCase()
+          aValue = a.code?.toLowerCase() || ''
+          bValue = b.code?.toLowerCase() || ''
           break
         case 'price':
           aValue = a.price
@@ -203,7 +357,7 @@ export default function ProductsPage() {
   }
 
   const handleAddProduct = async () => {
-    if (!formData.name || !formData.code || !formData.price) {
+    if (!formData.name || !formData.price) {
       toast.error('Majburiy maydonlarni to\'ldiring')
       return
     }
@@ -211,7 +365,7 @@ export default function ProductsPage() {
     try {
       await addProduct({
         name: formData.name,
-        code: formData.code,
+        code: formData.code?.trim() || undefined,
         price: Number(formData.price),
         stock: Number(formData.stock) || 0,
         measure: formData.measure,
@@ -244,6 +398,10 @@ export default function ProductsPage() {
     } catch (error) {
       toast.error('Saqlashda xatolik')
     }
+  }
+
+  function generateBarcode() {
+    return Date.now().toString()
   }
 
   const handleDelete = async (id: string) => {
@@ -403,6 +561,9 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
+      <div style={{ display: 'none' }} ref={barcodeRef}>
+        <BarcodeSheet products={selectedProductsArray} size="small" />
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
@@ -618,16 +779,29 @@ export default function ProductsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <span className="text-red-500">*</span> Kodi
+                    Barcode (ixtiyoriy)
                   </label>
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                    <input
-                      placeholder="Mahsulot kodi"
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-                    />
+
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                      <input
+                        placeholder="Barcode kiriting yoki generatsiya qiling"
+                        value={formData.code}
+                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, code: generateBarcode() })
+                      }
+                      className="px-4 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl font-medium transition-all border border-blue-200"
+                    >
+                      Generatsiya
+                    </button>
                   </div>
                 </div>
 
@@ -892,15 +1066,31 @@ export default function ProductsPage() {
                       {/* Code */}
                       <td className="px-3 sm:px-4 py-2 sm:py-4">
                         {editingId === p._id ? (
-                          <input
-                            value={editForm.code || ''}
-                            onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
-                            className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                          />
+                          <div className="flex gap-2">
+                            <input
+                              value={editForm.code || ''}
+                              onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg"
+                              placeholder="Barcode"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditForm({ ...editForm, code: generateBarcode() })
+                              }
+                              className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg"
+                            >
+                              Generatsiya
+                            </button>
+                          </div>
                         ) : (
                           <div className="flex items-center gap-2">
                             <Hash size={14} className="text-gray-400" />
-                            <span className="font-mono text-gray-700">{p.code}</span>
+                            {p.code ? (
+                              <span className="font-mono text-gray-700">{p.code}</span>
+                            ) : (
+                              <span className="text-gray-400 italic">Barcode yo‘q</span>
+                            )}
                           </div>
                         )}
                       </td>
@@ -990,8 +1180,8 @@ export default function ProductsPage() {
 
                       {/* Actions */}
                       <td className="px-3 sm:px-4 py-2 sm:py-4">
-                      <div className="flex items-center gap-2 overflow-x-auto">
-                      {editingId === p._id ? (
+                        <div className="flex items-center gap-2 overflow-x-auto">
+                          {editingId === p._id ? (
                             <>
                               <button
                                 onClick={() => handleSaveEdit(p._id)}
@@ -1093,7 +1283,172 @@ export default function ProductsPage() {
             </div>
           </div>
         </div>
+        {/* Fixed Barcode Print Button */}
+        {selectedProducts.size > 0 && (
+          <button
+            onClick={() => setShowBarcodeModal(true)}
+            className="fixed bottom-8 right-8 px-7 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl font-bold flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all z-50"
+          >
+            <Printer size={22} />
+            Barcode chop etish ({selectedProducts.size})
+          </button>
+        )}
       </main>
+      {/* ====================== BARCODE PRINT MODAL ====================== */}
+      {showBarcodeModal && (
+        <div className="fixed inset-0 bg-black/65 flex items-center justify-center z-[100] p-4 sm:p-6">
+          <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-md sm:max-w-xl max-h-[96vh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+
+            {/* Header – ixchamroq */}
+            <div className="px-5 py-4 sm:px-6 sm:py-5 border-b flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-100 rounded-xl">
+                  <Printer className="text-blue-600" size={26} />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold">Barcode chop etish</h3>
+                  <p className="text-gray-500 text-sm">
+                    {selectedProducts.size} ta mahsulot
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBarcodeModal(false)}
+                className="text-2xl text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Body – kamroq joy egallashi uchun */}
+            <div className="flex-1 p-5 sm:p-6 overflow-y-auto space-y-5 sm:space-y-6">
+
+              {/* O‘lcham tanlash */}
+              <div>
+                <p className="text-sm text-gray-600 mb-2.5">O‘lcham:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setPrintSize('small')}
+                    className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${printSize === 'small'
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                  >
+                    <div className="font-bold">Kichik</div>
+                    <div className="text-xs text-gray-500 mt-0.5">30 × 50 mm</div>
+                  </button>
+
+                  <button
+                    onClick={() => setPrintSize('large')}
+                    className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${printSize === 'large'
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                  >
+                    <div className="font-bold">Katta</div>
+                    <div className="text-xs text-gray-500 mt-0.5">40 × 60 mm</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Chop etish usuli */}
+              <div>
+                <p className="text-sm text-gray-600 mb-2.5">Usul:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setPrintMode('individual')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all text-sm ${printMode === 'individual'
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                  >
+                    <div className="font-semibold">Alohida stikerlar</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Har biri alohida sahifada
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setPrintMode('a4')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all text-sm ${printMode === 'a4'
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                  >
+                    <div className="font-semibold">A4 varaqqa</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Bir varaqqa ko‘p joylashtirish
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Yangi: Sahifa yo‘nalishi (orientation) – faqat A4 rejimida faol */}
+              {printMode === 'a4' && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2.5">Sahifa yo‘nalishi:</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setOrientation('portrait')}
+                      className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${orientation === 'portrait'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      <div className="font-semibold">Kitob (Portrait)</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Vertikal</div>
+                    </button>
+
+                    <button
+                      onClick={() => setOrientation('landscape')}
+                      className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${orientation === 'landscape'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      <div className="font-semibold">Albom (Landscape)</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Gorizontal</div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Oldindan ko'rish – ixchamroq */}
+              <div>
+                <p className="text-sm text-gray-600 mb-2.5">Oldindan ko‘rish (birinchi 6 ta):</p>
+                <div className="bg-gray-100 border rounded-xl p-4 max-h-[180px] sm:max-h-[260px] overflow-auto flex justify-center items-center">
+                  <BarcodeSheet
+                    products={selectedProductsArray.slice(0, 6)}
+                    size={printSize}
+                  />
+                </div>
+                {selectedProductsArray.length > 6 && (
+                  <p className="text-center text-xs text-gray-500 mt-2">
+                    + yana {selectedProductsArray.length - 6} ta...
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t px-5 py-4 flex gap-3 bg-white">
+              <button
+                onClick={() => setShowBarcodeModal(false)}
+                className="flex-1 py-3 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50"
+              >
+                Bekor qilish
+              </button>
+              <button
+                onClick={handlePrintBarcodes}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+              >
+                <Printer size={18} />
+                Chop etish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
