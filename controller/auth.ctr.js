@@ -70,10 +70,10 @@ async function checkInitKey(req, res) {
 }
 
 async function initAdmin(req, res) {
-  const { username, password } = req.body;
+  const { username, password, phoneNumber } = req.body;
   const user = await User.findOne({ role: 'admin' });
   if (user) return res.status(400).json({ message: 'Admin mavjud' });
-  const admin = await User.create({ username, password, role: 'admin' });
+  const admin = await User.create({ username, password, role: 'admin', phoneNumber });
   res.json({ admin });
 }
 
