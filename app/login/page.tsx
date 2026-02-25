@@ -27,6 +27,10 @@ export default function LoginPage() {
     username: '',
     password: ''
   });
+  const [errors, setErrors] = useState({
+    username: '',
+    password: ''
+  });
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
 
@@ -57,16 +61,50 @@ export default function LoginPage() {
     setBubbles(generated);
   }, []);
 
-  const handleInputChange = (e: any) => {
+  const validateForm = () => {
+    const newErrors = { username: '', password: '' };
+
+    if (formData.username.trim().length < 5) {
+      newErrors.username = 'Foydalanuvchi nomi kamida 5 ta belgidan iborat bo‘lishi kerak';
+    }
+
+    if (formData.password.length < 5) {
+      newErrors.password = 'Parol kamida 5 ta belgidan iborat bo‘lishi kerak';
+    }
+
+    setErrors(newErrors);
+
+    return !newErrors.username && !newErrors.password;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    setErrors(prev => ({
+      ...prev,
+      [name]: name === 'username' && value.trim().length < 5 && value.length > 0
+        ? 'Kamida 5 ta belgi kiriting'
+        : name === 'password' && value.length < 5 && value.length > 0
+          ? 'Kamida 5 ta belgi kiriting'
+          : ''
+    }));
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Submit vaqtidagi to'liq tekshiruv
+    if (!validateForm()) {
+      toast.error('Iltimos, maydonlarni to‘g‘ri to‘ldiring', {
+        style: { background: '#ef4444', color: '#fff' }
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -85,37 +123,15 @@ export default function LoginPage() {
             <HiOutlineSparkles className="w-5 h-5" />
             <span>Xush kelibsiz, {data.user.username}!</span>
           </div>,
-          {
-            duration: 3000,
-            style: {
-              background: '#10b981',
-              color: '#fff',
-              padding: '16px',
-              borderRadius: '12px'
-            }
-          }
+          { duration: 3000, style: { background: '#10b981', color: '#fff' } }
         );
         await refreshUser();
         router.push(data.user.role === 'admin' ? '/admin' : '/');
       } else {
-        toast.error(data.message || 'Kirishda xatolik', {
-          style: {
-            background: '#ef4444',
-            color: '#fff',
-            padding: '16px',
-            borderRadius: '12px'
-          }
-        });
+        toast.error(data.message || 'Kirishda xatolik', { style: { background: '#ef4444', color: '#fff' } });
       }
     } catch (error) {
-      toast.error('Server bilan bog‘lanishda xatolik', {
-        style: {
-          background: '#ef4444',
-          color: '#fff',
-          padding: '16px',
-          borderRadius: '12px'
-        }
-      });
+      toast.error('Server bilan bog‘lanishda xatolik', { style: { background: '#ef4444', color: '#fff' } });
     } finally {
       setIsLoading(false);
     }
@@ -129,128 +145,134 @@ export default function LoginPage() {
 
       <motion.div
         whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 300 }}
-          className="relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/50"
+        transition={{ type: "spring", stiffness: 300 }}
+        className="relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/50"
+      >
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-center mb-8"
         >
-          {/* Header */}
+          <motion.div
+            whileHover={{ rotate: 360 }}
+            transition={{ duration: 0.5 }}
+            className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"
+          >
+            <FiLogIn className="w-8 h-8 text-white" />
+          </motion.div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Tizimga kirish
+          </h1>
+          <p className="text-gray-600 mt-3">Xush kelibsiz! Iltimos, ma'lumotlaringizni kiriting</p>
+        </motion.div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Username field */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-center mb-8"
+            transition={{ delay: 0.3 }}
           >
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
-              className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"
-            >
-              <FiLogIn className="w-8 h-8 text-white" />
-            </motion.div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Tizimga kirish
-            </h1>
-            <p className="text-gray-600 mt-3">Xush kelibsiz! Iltimos, ma'lumotlaringizni kiriting</p>
+            <div className="relative">
+              <FiUser className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'username' ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                onFocus={() => setFocusedField('username')}
+                onBlur={() => setFocusedField(null)}
+                placeholder="Foydalanuvchi nomi"
+                autoComplete="username"
+                className={`w-full pl-12 pr-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none transition-all duration-300 placeholder-gray-400 ${errors.username ? 'border-red-500 focus:border-red-600' : 'border-gray-200 focus:border-indigo-600'
+                  }`}
+              />
+            </div>
+            {errors.username && (
+              <p className="mt-1 text-sm text-red-600 font-medium">
+                {errors.username}
+              </p>
+            )}
           </motion.div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username field */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="relative">
-                <FiUser className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'username' ? 'text-indigo-600' : 'text-gray-400'
-                  }`} />
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  onFocus={() => setFocusedField('username')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="Foydalanuvchi nomi"
-                  required
-                  autoComplete="username"
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-600 focus:outline-none transition-all duration-300 placeholder-gray-400"
-                />
-              </div>
-            </motion.div>
-
-            {/* Password field */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="relative"
-            >
-              <div className="relative">
-                <FiLock className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-indigo-600' : 'text-gray-400'
-                  }`} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="Parol"
-                  required
-                  autoComplete="current-password"
-                  className="w-full pl-12 pr-12 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-indigo-600 focus:outline-none transition-all duration-300 placeholder-gray-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors duration-300"
-                >
-                  {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Submit button */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <motion.button
-                type="submit"
-                disabled={isLoading}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed relative overflow-hidden group"
+          {/* Password field */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="relative">
+              <FiLock className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+                placeholder="Parol"
+                autoComplete="current-password"
+                className={`w-full pl-12 pr-12 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none transition-all duration-300 placeholder-gray-400 ${errors.password ? 'border-red-500 focus:border-red-600' : 'border-gray-200 focus:border-indigo-600'
+                  }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors duration-300"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  {isLoading ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                      />
-                      Kirish...
-                    </>
-                  ) : (
-                    <>
-                      Kirish
-                      <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </span>
-                <motion.div
-                  className="absolute inset-0 bg-white"
-                  initial={{ x: "-100%" }}
-                  whileHover={{ x: "100%" }}
-                  transition={{ duration: 0.5 }}
-                  style={{ opacity: 0.2 }}
-                />
-              </motion.button>
-            </motion.div>
-          </form>
-        </motion.div>
+                {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600 font-medium">
+                {errors.password}
+              </p>
+            )}
+          </motion.div>
+
+          {/* Submit button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <motion.button
+              type="submit"
+              disabled={isLoading || !!errors.username || !!errors.password}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {isLoading ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                    />
+                    Kirish...
+                  </>
+                ) : (
+                  <>
+                    Kirish
+                    <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </span>
+              <motion.div
+                className="absolute inset-0 bg-white"
+                initial={{ x: "-100%" }}
+                whileHover={{ x: "100%" }}
+                transition={{ duration: 0.5 }}
+                style={{ opacity: 0.2 }}
+              />
+            </motion.button>
+          </motion.div>
+        </form>
+      </motion.div>
     </div>
   );
 }

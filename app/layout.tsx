@@ -11,25 +11,25 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'POS Sistema',
-  description: 'Zamonaviy Savdo Nuqtasi (POS) Tizimi',
+  title: 'Smart market',
+  description: 'Savdoni avtomatlashtirish tizimi',
   generator: 'v0.app',
   icons: {
     icon: [
       {
-        url: '/pos-icon.png',
+        url: '/favicon.ico',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/pos-icon.png',
+        url: '/favicon.ico',
         media: '(prefers-color-scheme: dark)',
       },
       {
-        url: '/pos-icon.png',
+        url: '/favicon.ico',
         type: 'image/png',
       },
     ],
-    apple: '/pos-icon.png',
+    apple: '/favicon.ico',
   },
 }
 
