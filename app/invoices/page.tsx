@@ -43,9 +43,9 @@ export default function InvoicesPage() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && 
-            !loadingMore && 
-            displayedInvoices.length < filteredInvoices.length) {
+        if (entries[0].isIntersecting &&
+          !loadingMore &&
+          displayedInvoices.length < filteredInvoices.length) {
           setLoadingMore(true)
           setTimeout(() => {
             setCurrentPage(prev => prev + 1)
@@ -87,7 +87,7 @@ export default function InvoicesPage() {
     if (searchTerm) {
       filtered = filtered.filter(invoice =>
         invoice._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.items.some(item => 
+        invoice.items.some(item =>
           item.name.toLowerCase().includes(searchTerm.toLowerCase())
         )
       )
@@ -106,7 +106,7 @@ export default function InvoicesPage() {
     if (dateFilter !== 'all') {
       filtered = filtered.filter(invoice => {
         const invoiceDate = new Date(invoice.date)
-        
+
         switch (dateFilter) {
           case 'today':
             return invoiceDate >= today
@@ -125,7 +125,7 @@ export default function InvoicesPage() {
     // Sorting
     filtered.sort((a, b) => {
       let aValue, bValue
-      
+
       switch (sortBy) {
         case 'date':
           aValue = new Date(a.date).getTime()
@@ -160,12 +160,12 @@ export default function InvoicesPage() {
 ╠══════════════════════════════════════════╣
 ║           MAHSULOTLAR                    ║
 ╠══════════════════════════════════════════╣
-${invoice.items.map((item, idx) => 
-`║ ${item.name.padEnd(25)} ║
+${invoice.items.map((item, idx) =>
+      `║ ${item.name.padEnd(25)} ║
 ║   ${item.quantity} ${item.measure} x ${item.price.toLocaleString()} so'm
 ║   Jami: ${item.subtotal.toLocaleString().padStart(10)} so'm
 ╠══════════════════════════════════════════╣`
-).join('\n')}
+    ).join('\n')}
 ║                                          ║
 ╠══════════════════════════════════════════╣
 ║ Jami: ${invoice.total.toLocaleString().padStart(25)} so'm
@@ -325,7 +325,7 @@ ${invoice.items.map((item, idx) =>
 
   const getStats = () => {
     const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.total, 0)
-    const totalItems = filteredInvoices.reduce((sum, inv) => 
+    const totalItems = filteredInvoices.reduce((sum, inv) =>
       sum + inv.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
     )
     const uniqueProducts = new Set(
@@ -353,11 +353,10 @@ ${invoice.items.map((item, idx) =>
           setSortOrder('desc')
         }
       }}
-      className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
-        sortBy === type
-          ? 'bg-blue-600 text-white border border-blue-600'
-          : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
-      }`}
+      className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${sortBy === type
+        ? 'bg-blue-600 text-white border border-blue-600'
+        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+        }`}
     >
       {label}
       {sortBy === type && (
@@ -389,18 +388,17 @@ ${invoice.items.map((item, idx) =>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Jami Cheklar</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.count}</p>
-              </div>
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <FileText className="text-purple-600" size={20} />
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-sm mb-1">Jami Cheklar</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.count}</p>
+            </div>
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <FileText className="text-purple-600" size={20} />
             </div>
           </div>
+        </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
@@ -443,7 +441,7 @@ ${invoice.items.map((item, idx) =>
 
         {/* Filters and Search */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row gap-4 flex-wrap">
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -461,7 +459,7 @@ ${invoice.items.map((item, idx) =>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
               >
                 <option value="all">Barcha vaqt</option>
                 <option value="today">Bugun</option>
@@ -475,7 +473,7 @@ ${invoice.items.map((item, idx) =>
                   setSearchTerm('')
                   setDateFilter('all')
                 }}
-                className="px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-xl text-gray-700 hover:text-gray-900 transition-all flex items-center gap-2"
+                className="flex-1 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-xl text-gray-700 hover:text-gray-900 transition-all flex items-center gap-2"
               >
                 <X size={18} />
                 Tozalash
@@ -504,8 +502,8 @@ ${invoice.items.map((item, idx) =>
               <FileText className="mx-auto text-gray-300 mb-6" size={64} />
               <h3 className="text-2xl font-bold text-gray-400 mb-2">Cheklar topilmadi</h3>
               <p className="text-gray-500 mb-6">
-                {searchTerm || dateFilter !== 'all' 
-                  ? 'Qidiruv natijalari bo\'sh' 
+                {searchTerm || dateFilter !== 'all'
+                  ? 'Qidiruv natijalari bo\'sh'
                   : 'Hozircha hech qanday chek mavjud emas'}
               </p>
               {(searchTerm || dateFilter !== 'all') && (
@@ -525,25 +523,25 @@ ${invoice.items.map((item, idx) =>
               <div className="text-sm text-gray-600 mb-4">
                 {displayedInvoices.length} / {filteredInvoices.length} ta chek • Jami: {stats.totalAmount.toLocaleString()} so'm
               </div>
-              
+
               {displayedInvoices.map((invoice) => (
                 <div
                   key={invoice._id}
                   className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all duration-300"
                 >
                   {/* Invoice Header */}
-                  <div 
+                  <div
                     className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
                     onClick={() => toggleExpandInvoice(invoice._id)}
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 flex-wrap">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-3">
                           <div className="p-2 bg-purple-100 rounded-lg">
                             <FileText className="text-purple-600" size={20} />
                           </div>
                           <div>
-                            <h3 className="text-gray-900 font-bold text-lg">
+                            <h3 className="text-gray-900 font-bold truncate text-lg">
                               Chek #{invoice._id.slice(-8).toUpperCase()}
                             </h3>
                             <div className="flex items-center gap-3 mt-2">
@@ -560,15 +558,15 @@ ${invoice.items.map((item, idx) =>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-gray-600 text-sm mb-1">Jami summa</p>
-                        <p className="text-2xl font-bold text-green-600">
+                      <div className="flex flex-col items-end gap-1 md:gap-2 text-right min-w-[100px]">
+                        <p className="text-gray-600 text-sm md:text-base">Jami summa</p>
+                        <p className="text-2xl md:text-3xl font-bold text-green-600 truncate">
                           {invoice.total.toLocaleString()}
                         </p>
-                        <p className="text-gray-500 text-sm">so'm</p>
+                        <p className="text-gray-500 text-sm md:text-base">so'm</p>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -606,7 +604,7 @@ ${invoice.items.map((item, idx) =>
                           }}
                           className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors border border-gray-300"
                         >
-                          {expandedInvoices.includes(invoice._id) ? 
+                          {expandedInvoices.includes(invoice._id) ?
                             <ChevronUp size={18} /> : <ChevronDown size={18} />
                           }
                         </button>
@@ -617,14 +615,14 @@ ${invoice.items.map((item, idx) =>
                   {/* Expanded Content */}
                   {expandedInvoices.includes(invoice._id) && (
                     <div className="border-t border-gray-200 bg-gray-50 p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-x-auto">
                         <div>
                           <h4 className="text-gray-900 font-semibold mb-3">Mahsulotlar</h4>
                           <div className="space-y-2">
                             {invoice.items.map((item, idx) => (
                               <div
                                 key={idx}
-                                className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-200"
+                                className="flex flex-col md:flex-row gap-6 justify-between items-center p-3 bg-white rounded-lg border border-gray-200"
                               >
                                 <div>
                                   <p className="text-gray-900 font-medium">{item.name}</p>
@@ -639,7 +637,7 @@ ${invoice.items.map((item, idx) =>
                             ))}
                           </div>
                         </div>
-                        
+
                         <div>
                           <h4 className="text-gray-900 font-semibold mb-3">To'lov ma'lumotlari</h4>
                           <div className="space-y-4">
@@ -649,22 +647,22 @@ ${invoice.items.map((item, idx) =>
                                 {invoice.paymentMethod}
                               </p>
                             </div>
-                            
+
                             <div className="space-y-2">
-                              <div className="flex justify-between">
+                              <div className="flex flex-col md:flex-row gap-6 justify-between">
                                 <span className="text-gray-600">Subtotal:</span>
                                 <span className="text-gray-900">
                                   {invoice.subtotal.toLocaleString()} so'm
                                 </span>
                               </div>
-                              <div className="flex justify-between border-t border-gray-300 pt-2">
-                                <span className="text-gray-900 font-bold">Jami:</span>
-                                <span className="text-green-600 font-bold text-lg">
+                              <div className="flex flex-col md:flex-row gap-6 justify-between border-t border-gray-300 pt-2">
+                                <span className="text-gray-900 font-bold truncate">Jami:</span>
+                                <span className="text-green-600 font-bold text-lg truncate">
                                   {invoice.total.toLocaleString()} so'm
                                 </span>
                               </div>
                             </div>
-                            
+
                             <div className="flex gap-2 pt-4">
                               <button
                                 onClick={() => printInvoice(invoice)}
@@ -721,7 +719,7 @@ ${invoice.items.map((item, idx) =>
       {/* Invoice Detail Modal */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-300 shadow-2xl">
+          <div className="bg-white rounded-xl max-w-4xl sm:max-w-full w-full max-h-[90vh] overflow-y-auto ...">
             <div className="sticky top-0 bg-white border-b border-gray-300 px-6 py-4 flex justify-between items-center shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-100 rounded-lg">
@@ -801,7 +799,7 @@ ${invoice.items.map((item, idx) =>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   onClick={() => printInvoice(selectedInvoice)}
                   className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow hover:shadow-md"

@@ -23,7 +23,7 @@ import {
   Clock,
   Loader2
 } from 'lucide-react'
-import toast   from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -82,9 +82,9 @@ export default function ReportsPage() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && 
-            !loadingMore && 
-            displayedInvoices.length < reports.invoices.length) {
+        if (entries[0].isIntersecting &&
+          !loadingMore &&
+          displayedInvoices.length < reports.invoices.length) {
           setLoadingMore(true)
           setTimeout(() => {
             setCurrentPage(prev => prev + 1)
@@ -304,8 +304,8 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
         setPeriodType(range === 'custom' ? 'monthly' : range === '7days' ? 'weekly' : 'monthly')
       }}
       className={`px-4 py-2 rounded-lg transition-all ${timeRange === range
-          ? 'bg-blue-600 text-white border border-blue-600'
-          : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+        ? 'bg-blue-600 text-white border border-blue-600'
+        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
         }`}
     >
       {label}
@@ -469,8 +469,8 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <button
               onClick={() => setChartType('bar')}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${chartType === 'bar'
-                  ? 'bg-blue-600 text-white border border-blue-600'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                ? 'bg-blue-600 text-white border border-blue-600'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
                 }`}
             >
               <BarChart size={16} />
@@ -479,8 +479,8 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <button
               onClick={() => setChartType('line')}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${chartType === 'line'
-                  ? 'bg-blue-600 text-white border border-blue-600'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                ? 'bg-blue-600 text-white border border-blue-600'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
                 }`}
             >
               <LineChart size={16} />
@@ -489,8 +489,8 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <button
               onClick={() => setChartType('pie')}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${chartType === 'pie'
-                  ? 'bg-blue-600 text-white border border-blue-600'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                ? 'bg-blue-600 text-white border border-blue-600'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
                 }`}
             >
               <PieChart size={16} />
@@ -500,9 +500,9 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Jami Savdo</p>
                 <p className="text-2xl font-bold text-gray-900">{reports.totalSales.toLocaleString()}</p>
@@ -519,7 +519,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                 <TrendingDown className="text-red-600" size={16} />
               ) : null}
               <span className={`text-sm ${stats.trend === 'up' ? 'text-green-600' :
-                  stats.trend === 'down' ? 'text-red-600' : 'text-gray-500'
+                stats.trend === 'down' ? 'text-red-600' : 'text-gray-500'
                 }`}>
                 {stats.trend === 'up' ? 'O\'sish' : stats.trend === 'down' ? 'Pasayish' : 'Barqaror'}
               </span>
@@ -527,7 +527,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Jami Cheklar</p>
                 <p className="text-2xl font-bold text-gray-900">{reports.totalInvoices}</p>
@@ -545,7 +545,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Sotilgan Mahsulot</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalItems}</p>
@@ -563,7 +563,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Faollik</p>
                 <p className="text-2xl font-bold text-gray-900">
@@ -583,7 +583,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
               <div>
                 <p className="text-gray-600 text-sm mb-1">Foyda</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.profit.toLocaleString()}</p>
@@ -600,10 +600,10 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Sales Chart */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
+            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
               <div className="flex items-center gap-3">
                 <TrendingUp className="text-blue-600" size={24} />
-                <h2 className="text-xl font-bold text-gray-900">Savdo Oqimi</h2>
+                <h2 className="text-xl font-bold text-gray-900">Savdo oqimi</h2>
               </div>
               <div className="text-sm text-gray-600">
                 Kunlik savdo
@@ -612,8 +612,8 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
 
             <div className="h-80">
               {reports.invoices.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  {chartType === 'bar' ? (
+                <ResponsiveContainer width="100%" height={300}>
+                {chartType === 'bar' ? (
                     <RechartsBarChart data={stats.salesData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
@@ -715,9 +715,9 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                   <div key={product.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${index === 0 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
-                          index === 1 ? 'bg-gray-100 text-gray-600 border border-gray-300' :
-                            index === 2 ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                              'bg-gray-100 text-gray-600 border border-gray-300'
+                        index === 1 ? 'bg-gray-100 text-gray-600 border border-gray-300' :
+                          index === 2 ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                            'bg-gray-100 text-gray-600 border border-gray-300'
                         }`}>
                         <span className="font-bold">{index + 1}</span>
                       </div>

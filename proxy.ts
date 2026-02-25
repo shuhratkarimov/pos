@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 
 export function proxy(request: NextRequest) {
   const token = request.cookies.get('accessToken')?.value
-  const role = request.cookies.get('role')?.value // agar login vaqtida set qilgan bo‘lsangiz
+  const role = request.cookies.get('role')?.value
 
   const { pathname } = request.nextUrl
 
@@ -16,13 +16,20 @@ export function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Login pagega kirish → redirect qilish
+  // Login pagega kirsa → redirect
   if (pathname === '/login') {
     if (role === 'admin') return NextResponse.redirect(new URL('/admin', request.url))
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Admin rootga kirsa → /admin
+  // Admin page-ga kira olishni faqat adminga ruxsat berish
+  if (pathname.startsWith('/admin')) {
+    if (role !== 'admin') {
+      return NextResponse.redirect(new URL('/', request.url)) // admin bo'lmaganlarni home-ga yo'naltirish
+    }
+  }
+
+  // Agar "/" rootga admin kirsa → /admin
   if (pathname === '/' && role === 'admin') {
     return NextResponse.redirect(new URL('/admin', request.url))
   }

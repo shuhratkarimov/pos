@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Navigation from '@/components/Navigation'
 import { DebtRecord, getDebtRecords, addDebtRecord, updateDebtRecord, deleteDebtRecord, sendSms, getSmsHistoryForPhone } from '@/lib/api'
-import { Plus, AlertCircle, CheckCircle2, Edit2, Trash2, Save, X, Calendar, User, DollarSign, Search, Filter, TrendingUp, Clock, Users, RefreshCw, Loader2, Send } from 'lucide-react'
+import { Plus, AlertCircle, CheckCircle2, Edit2, Trash2, Save, X, Calendar, User, DollarSign, Search, Filter, TrendingUp, Clock, Users, RefreshCw, Loader2, Send, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useSearchParams, useRouter } from 'next/navigation'
 const ITEMS_PER_PAGE = 20
@@ -45,13 +45,12 @@ export default function DebtPage() {
   const [mode, setMode] = useState<'normal' | 'new' | 'update'>('normal')
   const [preFillAmount, setPreFillAmount] = useState<number | null>(null)
   const [isSendingSms, setIsSendingSms] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     const m = searchParams.get('mode')
     const amtStr = searchParams.get('amount')
     const did = searchParams.get('id')
-
-    console.log('🔍 Query params:', { mode: m, amount: amtStr, id: did })
 
     // Yangi qarz (kassadan kelgan)
     if (m === 'new' && amtStr && !hasOpenedFromKassa.current) {
@@ -425,7 +424,7 @@ export default function DebtPage() {
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center gap-3 mb-2">
                 <div className="p-2 bg-red-600 rounded-xl shadow">
                   <AlertCircle className="text-white" size={28} />
                 </div>
@@ -442,7 +441,7 @@ export default function DebtPage() {
 
             <button
               onClick={() => setShowDebtModal(true)}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold flex items-center gap-3 transition-all shadow hover:shadow-md"
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow hover:shadow-md"
             >
               <Plus size={20} />
               Yangi qarz qo'shish
@@ -614,57 +613,106 @@ export default function DebtPage() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Buyurtmachi nomi yoki izoh bo'yicha qidirish..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-              />
-            </div>
+        {/* Filters - Accordion Version for Very Small Screens */}
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 mb-6 shadow-sm">
+          {/* Mobile Filter Toggle */}
+          <div className="sm:hidden mb-3">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg text-gray-700"
+            >
+              <span className="font-medium">Filtrlar</span>
+              <ChevronDown size={20} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
 
-            {/* Filters */}
-            <div className="flex gap-3">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-              >
-                <option value="all">Barcha holatlar</option>
-                <option value="pending">To'lanmagan</option>
-                <option value="paid">To'langan</option>
-              </select>
+          {/* Filters Content */}
+          <div className={`${showFilters ? 'block' : 'hidden'} sm:block`}>
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Search */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Qidirish..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+                />
+              </div>
 
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)}
-                className="px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-              >
-                <option value="all">Barcha sanalar</option>
-                <option value="overdue">Muddati o'tgan</option>
-                <option value="today">Bugun to'lanadi</option>
-                <option value="week">Bu hafta to'lanadi</option>
-              </select>
+              {/* Filters Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  className="px-3 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+                >
+                  <option value="all">Holat</option>
+                  <option value="pending">To'lanmagan</option>
+                  <option value="paid">To'langan</option>
+                </select>
 
-              <button
-                onClick={() => {
-                  setSearchTerm('')
-                  setStatusFilter('all')
-                  setDateFilter('all')
-                }}
-                className="px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-xl text-gray-700 hover:text-gray-900 transition-all flex items-center gap-2"
-              >
-                <RefreshCw size={18} />
-                Tozalash
-              </button>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)}
+                  className="px-3 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+                >
+                  <option value="all">Sana</option>
+                  <option value="overdue">Muddati o'tgan</option>
+                  <option value="today">Bugun</option>
+                  <option value="week">Bu hafta</option>
+                </select>
+
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    setStatusFilter('all')
+                    setDateFilter('all')
+                  }}
+                  className="px-3 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-xl text-gray-700 hover:text-gray-900 transition-all flex items-center justify-center"
+                  title="Filtrlarni tozalash"
+                >
+                  <RefreshCw size={18} />
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Active Filters Chips */}
+          {(searchTerm || statusFilter !== 'all' || dateFilter !== 'all') && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t border-gray-200">
+              <span className="text-sm text-gray-500 hidden sm:inline">Faol filtrlar:</span>
+
+              {searchTerm && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs sm:text-sm">
+                  <span className="truncate max-w-[150px]">{searchTerm}</span>
+                  <button onClick={() => setSearchTerm('')} className="ml-1 hover:text-blue-900">
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+
+              {statusFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-xs sm:text-sm">
+                  {statusFilter === 'pending' ? 'To\'lanmagan' : 'To\'langan'}
+                  <button onClick={() => setStatusFilter('all')} className="ml-1 hover:text-purple-900">
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+
+              {dateFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs sm:text-sm">
+                  {dateFilter === 'overdue' ? 'Muddati o\'tgan' :
+                    dateFilter === 'today' ? 'Bugun' : 'Bu hafta'}
+                  <button onClick={() => setDateFilter('all')} className="ml-1 hover:text-green-900">
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {showSmsHistoryModal && selectedDebtForSms && (
@@ -783,10 +831,12 @@ export default function DebtPage() {
         {/* Debts List */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
           <div className="border-b border-gray-200 p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-2 sm:gap-0 border-b border-gray-200 p-6">
               <div className="flex items-center gap-3">
                 <AlertCircle className="text-red-600" size={24} />
-                <h2 className="text-2xl font-bold text-gray-900">Qarzlar ro'yxati</h2>
+                <h2 className="text-2xl font-bold text-gray-900 text-center sm:text-left">
+                  Qarzlar ro'yxati
+                </h2>
               </div>
               <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                 {displayedDebts.length} / {filteredDebts.length} ta qarz
@@ -801,9 +851,9 @@ export default function DebtPage() {
                 <p className="mt-4 text-gray-400">Qarzlar yuklanmoqda...</p>
               </div>
             ) : displayedDebts.length === 0 ? (
-              <div className="py-12 text-center">
-                <AlertCircle className="mx-auto text-gray-300 mb-4" size={48} />
-                <h3 className="text-xl font-semibold text-gray-400 mb-2">Qarzlar topilmadi</h3>
+              <div className="py-12 flex flex-row items-center justify-center text-center gap-2">
+                <AlertCircle className="text-gray-300" size={48} />
+                <h3 className="text-xl font-semibold text-gray-400">Qarzlar topilmadi</h3>
                 <p className="text-gray-500">
                   {searchTerm || statusFilter !== 'all' || dateFilter !== 'all'
                     ? 'Qidiruv natijalari bo\'sh'
@@ -812,7 +862,7 @@ export default function DebtPage() {
               </div>
             ) : (
               <>
-                <table className="w-full">
+                <table className="w-full min-w-[600px]">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
                       <th className="px-6 py-4 text-left text-gray-600 font-semibold">Buyurtmachi</th>
@@ -845,7 +895,6 @@ export default function DebtPage() {
                               </div>
                               <div>
                                 <p className="text-gray-900 font-medium">{debt.customerName}</p>
-                                <p className="text-gray-500 text-xs">ID: {debt._id.slice(-6)}</p>
                               </div>
                             </div>
                           )}
@@ -895,7 +944,7 @@ export default function DebtPage() {
 
 
                         {/* Status */}
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center md:text-left">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(debt)}`}>
                             {getStatusText(debt)}
                           </span>
@@ -922,7 +971,7 @@ export default function DebtPage() {
                         </td>
                         {/* Actions */}
                         <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex flwex-wrap items-center justify-center gap-2">
                             {editingId === debt._id ? (
                               <>
                                 <button

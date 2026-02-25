@@ -424,7 +424,7 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
               {mounted && (
                 <CSVLink
                   data={exportData}
@@ -453,7 +453,7 @@ export default function ProductsPage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
@@ -509,7 +509,7 @@ export default function ProductsPage() {
 
         {/* Search and Filters */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 lg:gap-4">
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -523,7 +523,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
               <select
                 value={stockFilter}
                 onChange={(e) => setStockFilter(e.target.value as typeof stockFilter)}
@@ -567,7 +567,7 @@ export default function ProductsPage() {
                     {selectedProducts.size} ta mahsulot tanlandi
                   </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={handleBatchDelete}
                     className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors border border-red-200"
@@ -720,7 +720,7 @@ export default function ProductsPage() {
         {/* Import Modal */}
         {showImport && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-md w-full border border-gray-300 shadow-2xl">
+            <div className="bg-white rounded-xl w-full max-w-lg sm:max-w-md p-4 sm:p-6 border border-gray-300 shadow-2xl">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold text-gray-900">CSV Import Qilish</h3>
@@ -807,11 +807,11 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto w-full">
             <table className="w-full">
               <thead className="sticky top-0 bg-gray-50 z-10">
                 <tr className="border-b border-gray-200">
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold w-12">
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold w-12">
                     <input
                       type="checkbox"
                       checked={selectedProducts.size === displayedProducts.length && displayedProducts.length > 0}
@@ -819,30 +819,30 @@ export default function ProductsPage() {
                       className="rounded border-gray-300 bg-white text-blue-600 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold">
                     <SortHeader field="name" label="Mahsulot Nomi" />
                   </th>
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold">
                     <SortHeader field="code" label="Kodi" />
                   </th>
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold">
                     <SortHeader field="price" label="Narxi" />
                   </th>
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold">
                     <SortHeader field="stock" label="Ombor" />
                   </th>
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">O'lchov</th>
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold">O'lchov</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold">
                     <SortHeader field="boughtPrice" label="Olingan narx" />
                   </th>
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">Harakatlar</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-4 text-left text-gray-600 font-semibold">Harakatlar</th>
                 </tr>
               </thead>
 
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                    <td colSpan={8} className="px-3 sm:px-4 py-2 sm:py-4 text-center">
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
                       </div>
@@ -851,7 +851,7 @@ export default function ProductsPage() {
                   </tr>
                 ) : displayedProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                    <td colSpan={8} className="px-3 sm:px-4 py-2 sm:py-4 text-center">
                       <Package className="mx-auto text-gray-300 mb-4" size={48} />
                       <h3 className="text-xl font-semibold text-gray-400 mb-2">Mahsulotlar topilmadi</h3>
                       <p className="text-gray-500">
@@ -865,7 +865,7 @@ export default function ProductsPage() {
                       key={p._id}
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors group"
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
                         <input
                           type="checkbox"
                           checked={selectedProducts.has(p._id)}
@@ -875,7 +875,7 @@ export default function ProductsPage() {
                       </td>
 
                       {/* Name */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
                         {editingId === p._id ? (
                           <input
                             value={editForm.name || ''}
@@ -890,7 +890,7 @@ export default function ProductsPage() {
                       </td>
 
                       {/* Code */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
                         {editingId === p._id ? (
                           <input
                             value={editForm.code || ''}
@@ -906,14 +906,14 @@ export default function ProductsPage() {
                       </td>
 
                       {/* Price */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
                         {editingId === p._id ? (
                           <div className="relative">
                             <input
                               type="number"
                               value={editForm.price || 0}
                               onChange={(e) => setEditForm({ ...editForm, price: Number(e.target.value) })}
-                              className="w-32 pl-8 pr-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                              className="w-full sm:w-32 pl-8 pr-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             />
                             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">so'm</span>
                           </div>
@@ -926,13 +926,13 @@ export default function ProductsPage() {
                       </td>
 
                       {/* Stock */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
                         {editingId === p._id ? (
                           <input
                             type="number"
                             value={editForm.stock || 0}
                             onChange={(e) => setEditForm({ ...editForm, stock: Number(e.target.value) })}
-                            className="w-24 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            className="w-full sm:w-32 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           />
                         ) : (
                           <div>
@@ -947,12 +947,12 @@ export default function ProductsPage() {
                       </td>
 
                       {/* Measure */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
                         {editingId === p._id ? (
                           <select
                             value={editForm.measure}
                             onChange={(e) => setEditForm({ ...editForm, measure: e.target.value })}
-                            className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            className="w-full sm:w-32 px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           >
                             <option value="dona">dona</option>
                             <option value="kg">kg</option>
@@ -969,14 +969,14 @@ export default function ProductsPage() {
                       </td>
 
                       {/* Cost Price */}
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
                         {editingId === p._id ? (
                           <div className="relative">
                             <input
                               type="number"
                               value={editForm.boughtPrice || 0}
                               onChange={(e) => setEditForm({ ...editForm, boughtPrice: Number(e.target.value) })}
-                              className="w-32 pl-8 pr-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                              className="w-full sm:w-32 pl-8 pr-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
                             />
                             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">so'm</span>
                           </div>
@@ -989,9 +989,9 @@ export default function ProductsPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {editingId === p._id ? (
+                      <td className="px-3 sm:px-4 py-2 sm:py-4">
+                      <div className="flex items-center gap-2 overflow-x-auto">
+                      {editingId === p._id ? (
                             <>
                               <button
                                 onClick={() => handleSaveEdit(p._id)}

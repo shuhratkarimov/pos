@@ -34,4 +34,4 @@ jobs:
 
             # 4️⃣ PM2 processni ishonchli restart qilish
             pm2 delete frontend || true
-            pm2 start npm --name frontend -- run start
+            pm2 start npm --name frontend -- run start -- -p 3005
