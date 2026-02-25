@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Deploy to VPS
@@ -22,7 +22,7 @@ jobs:
           script: |
             cd /var/www/frontend
 
-            # 1️⃣ VPS’da branch bilan to‘liq moslash
+            # 1️⃣ Branch bilan to‘liq sinxronlash
             git fetch --all
             git reset --hard origin/frontend
 
