@@ -8,8 +8,13 @@ import toast from 'react-hot-toast'
 import { useSearchParams, useRouter } from 'next/navigation'
 const ITEMS_PER_PAGE = 20
 import { useUser } from '@/context/UserContext'
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US').format(amount);
+}
+
 const STANDARD_SMS_TEMPLATE = (amount: number, dueDate: string, shopName?: string, phone?: string) =>
-  `Assalomu alaykum! Sizning ${shopName || ''} do'konidagi ${amount.toLocaleString('uz-UZ')} so'm qarzingizni to'lash muddati o'tib ketdi. Iltimos do'konga uchrashing! Tel: ${phone || ''}`
+  `Assalomu alaykum! Sizning ${shopName || ''} do'konidagi ${formatCurrency(amount)} so'm qarzingizni to'lash muddati o'tib ketdi. Iltimos do'konga uchrashing! Tel: ${phone || ''}`
 
 export default function DebtPage() {
   const searchParams = useSearchParams()
