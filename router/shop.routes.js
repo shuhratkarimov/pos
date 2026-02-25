@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllShops, createShop, updateShop, deleteShop, getOneShop, updateShopName, topUpBalance, getBalance, getBalancesByAdmin, getBalanceInProvider } = require('../controller/shop.ctr');
+const { getAllShops, createShop, updateShop, deleteShop, getOneShop, updateShopName, topUpBalance, getBalance, getBalancesByAdmin, getBalanceInProvider, deductBalance } = require('../controller/shop.ctr');
 const authMiddleware = require('../middleware/auth.middleware');
 const adminMiddleware = require('../middleware/admin.middleware');
 
@@ -14,5 +14,6 @@ router.put('/update-shop-name', authMiddleware, updateShopName)
 router.put('/top-up-balance', authMiddleware, adminMiddleware, topUpBalance)
 router.get('/get-sms-balance', authMiddleware, getBalance)
 router.get('/get-sms-balances-admin', authMiddleware, adminMiddleware, getBalancesByAdmin)
+router.put('/deduct-balance', authMiddleware, deductBalance)
 
 module.exports = router;

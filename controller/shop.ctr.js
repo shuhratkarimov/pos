@@ -96,6 +96,30 @@ async function topUpBalance(req, res) {
     return res.json({ balance: updated.balance, storeId });
 }
 
+async function deductBalance(req, res) {
+    const { amount, storeId } = req.body;
+
+    if (!amount || amount <= 0) {
+        return res.status(400).json({ message: 'Miqdor musbat bo‘lishi kerak' });
+    }
+
+    // Balansni topish
+    const balanceDoc = await SmsBalance.findOne({ storeId: new mongoose.Types.ObjectId(storeId) });
+    if (!balanceDoc) return res.status(404).json({ message: 'Balance not found' });
+
+    // Yetarli balans borligini tekshirish
+    if (balanceDoc.balance < amount) {
+        return res.status(400).json({ message: 'Balans yetarli emas' });
+    }
+
+    // Balansni kamaytirish
+    balanceDoc.balance -= amount;
+    balanceDoc.lastDeductAt = new Date();
+    await balanceDoc.save();
+
+    return res.json({ balance: balanceDoc.balance, storeId });
+}
+
 async function getBalancesByAdmin(req, res) {
     const docs = await SmsBalance.find();
     res.json(docs);
@@ -127,5 +151,6 @@ module.exports = {
     topUpBalance,
     getBalanceInProvider,
     getBalance,
-    getBalancesByAdmin
+    getBalancesByAdmin,
+    deductBalance
 }
