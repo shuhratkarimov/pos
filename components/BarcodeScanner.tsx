@@ -166,26 +166,34 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
         await html5QrCode.start(
           backCamera.id,
           config,
-          (decodedText) => {
+          async (decodedText) => {
             if (!mounted || isScanningRef.current) return
-
             isScanningRef.current = true
             playBeep()
+            if (navigator.vibrate) navigator.vibrate(50)
 
-            if (navigator.vibrate) {
-              navigator.vibrate(50)
-            }
-
+            // Scan qilingan barcode-ni jo'natish
             onScan(decodedText)
 
-            setTimeout(() => {
-              if (mounted) {
-                onClose()
+            // Scannerni to'xtatish va kamera track-ni stop qilish
+            try {
+              await html5QrCode.stop()
+            } catch (err) {
+              console.log('Stop scanner error:', err)
+            }
+
+            if (videoTrackRef.current) {
+              try {
+                videoTrackRef.current.stop()
+              } catch (err) {
+                console.log('Stop video track error:', err)
               }
-            }, 300)
+            }
+
+            onClose()
           },
           (errorMessage) => {
-            // Ignore scan errors
+            // xatoliklarni e'tiborsiz qoldirish
           }
         )
 
