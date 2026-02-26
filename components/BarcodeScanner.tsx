@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { Camera, X, ScanLine, Zap } from 'lucide-react'
 
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
 interface Props {
   onScan: (decodedText: string) => void
   onClose: () => void
@@ -244,7 +246,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
           {/* Invisible input for wireless scanner */}
           <input
             type="text"
-            autoFocus
+            autoFocus={!isMobile}
             className="absolute top-0 left-0 w-full h-full opacity-0 pointer-events-none"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {

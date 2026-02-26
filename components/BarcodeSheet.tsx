@@ -1,70 +1,74 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
-import JsBarcode from 'jsbarcode'
+import { useRef, useEffect, useState } from 'react'
+import { Html5Qrcode } from 'html5-qrcode'
 
-type Product = {
-  _id: string
-  name: string
-  code?: string
-}
+export default function BarcodeScanner({ onScan, onClose }: { onScan: (code: string) => void; onClose: () => void }) {
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [rotation, setRotation] = useState(0)
 
-type BarcodeSheetProps = {
-  products: Product[]
-  size?: 'small' | 'large'
-}
+  // Window rotation / orientation
+  useEffect(() => {
+    const updateRotation = () => {
+      const angle = (window.screen.orientation?.angle ?? 0)
+      setRotation(angle)
+    }
 
-const mmToPx = (mm: number) => Math.round(mm * 3.78)
+    window.addEventListener('orientationchange', updateRotation)
+    window.addEventListener('resize', updateRotation)
 
-export default function BarcodeSheet({ products, size = 'small' }: BarcodeSheetProps) {
-  const svgRefs = useRef<SVGSVGElement[]>([])
+    updateRotation() // init
 
-  const [widthMM, heightMM] = size === 'small' ? [50, 30] : [60, 40]
-  const widthPx = mmToPx(widthMM)
-  const heightPx = mmToPx(heightMM)
+    return () => {
+      window.removeEventListener('orientationchange', updateRotation)
+      window.removeEventListener('resize', updateRotation)
+    }
+  }, [])
 
   useEffect(() => {
-    products.forEach((p, i) => {
-      const svg = svgRefs.current[i]
-      if (svg && p.code) {
-        // Eski chizmani tozalash
-        while (svg.firstChild) svg.removeChild(svg.firstChild)
+    const initScanner = async () => {
+      if (!containerRef.current) return
+      const html5QrCode = new Html5Qrcode('reader')
+      scannerRef.current = html5QrCode
+      const cameras = await Html5Qrcode.getCameras()
+      if (!cameras || cameras.length === 0) return
+      const backCamera = cameras[0]
+      await html5QrCode.start(
+        backCamera.id,
+        { fps: 20, qrbox: 250 },
+        (decoded) => {
+          onScan(decoded)
+          onClose()
+        },
+        (errorMessage) => {
+          // xatoliklarni e'tiborsiz qoldirish yoki konsolga chiqish
+          // console.log('Scan error:', errorMessage)
+        }
+      )
+    }
 
-        JsBarcode(svg, p.code, {
-          format: 'CODE128',
-          width: 2.2,
-          height: heightPx - 55,
-          displayValue: true,
-          fontSize: 15,
-          margin: 8,
-          textMargin: 3,
-        })
-      }
-    })
-  }, [products, size, heightPx])
+    initScanner()
+
+    return () => {
+      scannerRef.current?.stop().catch(() => { })
+    }
+  }, [onScan, onClose])
 
   return (
-    <div className="p-4">
-      <div className="grid grid-cols-2 gap-6">
-        {products.map((p, i) => (
-          <div
-            key={p._id}
-            className="flex flex-col items-center justify-center border border-gray-300 rounded-2xl bg-white shadow-sm overflow-hidden"
-            style={{ width: widthPx, height: heightPx }}
-          >
-            <svg
-              ref={(el) => {
-                if (el) svgRefs.current[i] = el
-              }}
-              className="w-full"
-              style={{ height: heightPx - 42 }}
-            />
-            <div className="text-center text-[11px] font-medium text-gray-800 mt-2 px-2 line-clamp-2">
-              {p.name}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div
+      ref={containerRef}
+      className="fixed inset-0 bg-black flex items-center justify-center z-[200] p-4"
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        transformOrigin: 'center center',
+        transition: 'transform 0.3s ease',
+      }}
+    >
+      <div
+        id="reader"
+        className="w-full max-w-md aspect-square bg-gray-900 rounded-2xl overflow-hidden shadow-lg"
+      />
     </div>
   )
 }
