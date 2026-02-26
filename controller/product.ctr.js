@@ -45,9 +45,30 @@ async function deleteProduct(req, res) {
     }
 }
 
+async function getPotentialProfit(req, res) {
+    try {
+        const shop = req.user.shop;
+
+        const products = await Product.find({ shop }).select('price boughtPrice stock');
+
+        const potentialProfit = products.reduce((sum, p) => {
+            const profitPerUnit = (p.price || 0) - (p.boughtPrice || 0);
+            return sum + (profitPerUnit * (p.stock || 0));
+        }, 0);
+
+        res.status(200).json({
+            potentialProfit,
+            totalProducts: products.length,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
 module.exports = {
     getAllProducts,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getPotentialProfit
 }
