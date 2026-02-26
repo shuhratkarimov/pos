@@ -17,6 +17,13 @@ import {
 } from 'lucide-react'
 import ProfileMenu from '@/components/ProfileMenu'
 
+import { Viga } from 'next/font/google'
+
+const viga = Viga({
+  subsets: ['latin'],
+  weight: '400'
+})
+
 const navItems = [
   { href: '/', label: 'Kassa', icon: ShoppingCart },
   { href: '/products', label: 'Mahsulotlar', icon: Package },
@@ -61,12 +68,19 @@ export default function Navigation() {
               </Link>
 
               <span className="sm:hidden text-white font-semibold text-base">
-                b-market.uz
+                <p className={viga.className}>
+                  B-MARKET
+                </p>
+                <p className="text-xs text-teal-100">
+                  Professional savdo tizimi
+                </p>
               </span>
 
               <div className="leading-tight hidden sm:block">
                 <span className="block text-white font-bold text-base sm:text-lg">
-                  B-MARKET
+                  <p className={viga.className}>
+                    B-MARKET
+                  </p>
                 </span>
                 <span className="block text-teal-100 text-xs">
                   Professional savdo tizimi
@@ -180,8 +194,8 @@ export default function Navigation() {
                   >
                     <div className={`
                       p-3 rounded-xl
-                      ${isActive 
-                        ? 'bg-white/20' 
+                      ${isActive
+                        ? 'bg-white/20'
                         : 'bg-teal-100 text-teal-600'
                       }
                     `}>
