@@ -354,7 +354,7 @@ ${invoice.items.map((item, idx) =>
         }
       }}
       className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${sortBy === type
-        ? 'bg-blue-600 text-white border border-blue-600'
+        ? 'bg-teal-600 text-white border border-teal-600'
         : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
         }`}
     >
@@ -373,7 +373,7 @@ ${invoice.items.map((item, idx) =>
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-purple-600 rounded-xl shadow">
+            <div className="p-3 bg-teal-600 rounded-xl shadow">
               <FileText className="text-white" size={28} />
             </div>
             <div>
@@ -391,8 +391,9 @@ ${invoice.items.map((item, idx) =>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm mb-1">Jami Cheklar</p>
+              <p className="text-gray-600 text-sm mb-1">Jami cheklar</p>
               <p className="text-2xl font-bold text-gray-900">{stats.count}</p>
+              <p className="text-gray-500 text-xs">ta</p>
             </div>
             <div className="p-2 bg-purple-100 rounded-lg">
               <FileText className="text-purple-600" size={20} />
@@ -403,7 +404,7 @@ ${invoice.items.map((item, idx) =>
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Jami Summa</p>
+                <p className="text-gray-600 text-sm mb-1">Jami summa</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalAmount.toLocaleString()}</p>
                 <p className="text-gray-500 text-xs">so'm</p>
               </div>
@@ -416,8 +417,9 @@ ${invoice.items.map((item, idx) =>
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">Sotilgan Mahsulot</p>
+                <p className="text-gray-600 text-sm mb-1">Sotilgan mahsulot</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalItems}</p>
+                <p className="text-gray-500 text-xs">ta</p>
               </div>
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Package className="text-blue-600" size={20} />
@@ -428,7 +430,7 @@ ${invoice.items.map((item, idx) =>
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm mb-1">O'rtacha Chek</p>
+                <p className="text-gray-600 text-sm mb-1">O'rtacha chek</p>
                 <p className="text-2xl font-bold text-gray-900">{Math.round(stats.average).toLocaleString()}</p>
                 <p className="text-gray-500 text-xs">so'm</p>
               </div>
@@ -512,9 +514,9 @@ ${invoice.items.map((item, idx) =>
                     setSearchTerm('')
                     setDateFilter('all')
                   }}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow hover:shadow-md"
+                  className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition-all shadow hover:shadow-md"
                 >
-                  Filtrlarni Tozalash
+                  Filtrlarni tozalash
                 </button>
               )}
             </div>

@@ -174,7 +174,7 @@ export default function ReportsPage() {
     const salesByDate: Record<string, { sales: number; count: number }> = {}
 
     reports.invoices.forEach(invoice => {
-      const date = new Date(invoice.date).toLocaleDateString('uz-UZ')
+      const date = new Date(invoice.date).toLocaleDateString('ru-RU')
       if (!salesByDate[date]) {
         salesByDate[date] = { sales: 0, count: 0 }
       }
@@ -304,7 +304,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
         setPeriodType(range === 'custom' ? 'monthly' : range === '7days' ? 'weekly' : 'monthly')
       }}
       className={`px-4 py-2 rounded-lg transition-all ${timeRange === range
-        ? 'bg-blue-600 text-white border border-blue-600'
+        ? 'bg-teal-600 text-white border border-teal-600'
         : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
         }`}
     >
@@ -313,16 +313,16 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Navigation />
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-blue-600 rounded-xl shadow">
+                <div className="p-2 bg-teal-600 rounded-xl shadow">
                   <BarChart3 className="text-white" size={28} />
                 </div>
                 <div>
@@ -336,7 +336,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={downloadReport}
                 disabled={reports.invoices.length === 0}
@@ -348,7 +348,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               <button
                 onClick={handleGetReport}
                 disabled={loading}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold flex items-center gap-2 transition-all shadow hover:shadow-md"
+                className="px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl font-bold flex items-center gap-2 transition-all shadow hover:shadow-md"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={18} />
@@ -379,7 +379,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Filter className="text-blue-600" size={24} />
+              <Filter className="text-teal-600" size={24} />
               <h2 className="text-xl font-bold text-gray-900">Hisobot parametrlari</h2>
             </div>
             <div className="text-sm text-gray-600">
@@ -399,7 +399,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               <select
                 value={periodType}
                 onChange={(e) => setPeriodType(e.target.value as PeriodType)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-blue-100 transition-all"
               >
                 <option value="daily">Kunlik</option>
                 <option value="weekly">Haftalik</option>
@@ -429,7 +429,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tugatish Sanasi
+                Tugatish sanasi
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -449,7 +449,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               <button
                 onClick={handleGetReport}
                 disabled={loading}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow"
+                className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow"
               >
                 {loading ? (
                   <RefreshCw className="animate-spin" size={18} />
@@ -464,12 +464,14 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           </div>
 
           {/* Chart Type Selector */}
-          <div className="mt-6 flex gap-3">
-            <p className="text-gray-600 text-sm flex items-center">Grafik turi:</p>
+          <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+            <p className="text-gray-600 text-sm flex items-center">
+              Grafik turi:
+            </p>
             <button
               onClick={() => setChartType('bar')}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${chartType === 'bar'
-                ? 'bg-blue-600 text-white border border-blue-600'
+                ? 'bg-teal-600 text-white border border-teal-600'
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
                 }`}
             >
@@ -479,7 +481,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <button
               onClick={() => setChartType('line')}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${chartType === 'line'
-                ? 'bg-blue-600 text-white border border-blue-600'
+                ? 'bg-teal-600 text-white border border-teal-600'
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
                 }`}
             >
@@ -489,7 +491,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <button
               onClick={() => setChartType('pie')}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${chartType === 'pie'
-                ? 'bg-blue-600 text-white border border-blue-600'
+                ? 'bg-teal-600 text-white border border-teal-600'
                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
                 }`}
             >
@@ -610,10 +612,10 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               </div>
             </div>
 
-            <div className="h-80">
+            <div className="h-80 w-full overflow-hidden">
               {reports.invoices.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                {chartType === 'bar' ? (
+                  {chartType === 'bar' ? (
                     <RechartsBarChart data={stats.salesData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
@@ -747,8 +749,8 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             {/* Hourly Sales */}
             <div className="mt-8">
               <h3 className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
-                <Clock size={18} className="text-blue-600" />
-                Soatlik Savdo
+                <Clock size={18} className="text-teal-600" />
+                Soatlik savdo
               </h3>
               <div className="h-48">
                 {reports.invoices.length > 0 ? (
@@ -807,18 +809,18 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <table className="w-full">
               <thead className="sticky top-0 bg-gray-50 z-10">
                 <tr className="border-b border-gray-200">
-                  <th className="px-6 py-4 text-left text-gray-600 font-semibold">Sana va vaqt</th>
-                  <th className="px-6 py-4 text-center text-gray-600 font-semibold">Chek ID</th>
-                  <th className="px-6 py-4 text-center text-gray-600 font-semibold">Mahsulotlar</th>
-                  <th className="px-6 py-4 text-right text-gray-600 font-semibold">Subtotal</th>
-                  <th className="px-6 py-4 text-right text-gray-600 font-semibold">Jami</th>
-                  <th className="px-6 py-4 text-center text-gray-600 font-semibold">To'lov usuli</th>
+                  <th className="px-3 md:px-6 py-4 text-left text-gray-600 font-semibold">Sana va vaqt</th>
+                  <th className="px-3 md:px-6 py-4 text-center text-gray-600 font-semibold">Chek ID</th>
+                  <th className="px-3 md:px-6 py-4 text-center text-gray-600 font-semibold">Mahsulotlar</th>
+                  <th className="px-3 md:px-6 py-4 text-right text-gray-600 font-semibold">Subtotal</th>
+                  <th className="px-3 md:px-6 py-4 text-right text-gray-600 font-semibold">Jami</th>
+                  <th className="px-3 md:px-6 py-4 text-center text-gray-600 font-semibold">To'lov usuli</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center">
+                    <td colSpan={6} className="px-3 md:px-6 py-4 text-center">
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                       </div>
@@ -827,7 +829,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                   </tr>
                 ) : displayedInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={6} className="px-3 md:px-6 py-12 text-center">
                       <BarChart3 className="mx-auto text-gray-300 mb-4" size={48} />
                       <h3 className="text-xl font-semibold text-gray-400 mb-2">Hisobot ma'lumotlari yo'q</h3>
                       <p className="text-gray-500">
@@ -841,7 +843,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                       key={invoice._id}
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-3 md:px-6 py-4">
                         <div className="text-gray-900 font-medium">
                           {new Date(invoice.date).toLocaleDateString('ru-RU')}
                         </div>
@@ -849,26 +851,26 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                           {new Date(invoice.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-4 text-center">
                         <span className="font-mono text-gray-700 text-sm">
                           {invoice._id.slice(-8)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-4 text-center">
                         <div className="flex flex-col items-center">
                           <span className="text-gray-900 font-medium">{invoice.items.length}</span>
                           <span className="text-gray-600 text-xs">dona mahsulot</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3 md:px-6 py-4 text-right">
                         <div className="text-gray-700">{invoice.subtotal.toLocaleString()}</div>
                         <div className="text-gray-500 text-xs">so'm</div>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-3 md:px-6 py-4 text-right">
                         <div className="text-green-600 font-bold">{invoice.total.toLocaleString()}</div>
                         <div className="text-gray-500 text-xs">so'm</div>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 md:px-6 py-4 text-center">
                         <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium capitalize border border-gray-200">
                           {invoice.paymentMethod}
                         </span>

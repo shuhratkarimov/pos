@@ -287,7 +287,7 @@ export default function ProfileMenu() {
   if (loading) return (
     <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
   )
-  
+
   if (!user) return null
 
   return (
@@ -296,30 +296,30 @@ export default function ProfileMenu() {
       <div className="hidden md:block relative" ref={menuRef}>
         <button
           onClick={() => setOpen(!open)}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-teal-500 transition-all duration-200 group"
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-green-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white font-medium text-sm shadow-sm border-gray-200 border">
             {getInitials(user.username)}
           </div>
           <div className="text-left">
-            <p className="text-sm font-medium text-gray-700">{user.username}</p>
-            <p className="text-xs text-gray-500">{user.shop?.shopName || 'Do‘kon'}</p>
+            <p className="text-sm font-medium text-white">{user.username}</p>
+            <p className="text-xs text-teal-100">{user.shop?.shopName || 'Do‘kon'}</p>
           </div>
-          <ChevronDown size={16} className={`text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={16} className={`text-white transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {/* Desktop Dropdown */}
         {open && (
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-teal-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             {/* User Info Header */}
-            <div className="px-4 py-3 border-b border-gray-100">
+            <div className="px-4 py-3 border-b border-teal-100">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-green-600 flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-lg">
                   {getInitials(user.username)}
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">{user.username}</p>
-                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <p className="text-sm text-teal-600 flex items-center gap-1">
                     <Store size={14} />
                     {user.shop?.shopName || 'Do‘kon nomi mavjud emas'}
                   </p>
@@ -333,7 +333,7 @@ export default function ProfileMenu() {
             {/* Menu Items */}
             <div className="py-1 max-h-[70vh] overflow-y-auto">
               <MenuItem
-                icon={<Pencil size={16} className="text-amber-500" />}
+                icon={<Pencil size={16} className="text-teal-500" />}
                 label="Foydalanuvchi nomini o‘zgartirish"
                 onClick={() => {
                   setActiveModal('username')
@@ -343,7 +343,7 @@ export default function ProfileMenu() {
 
               {user.role !== 'admin' && (
                 <MenuItem
-                  icon={<Store size={16} className="text-amber-500" />}
+                  icon={<Store size={16} className="text-teal-500" />}
                   label="Do'kon nomini o'zgartirish"
                   onClick={() => {
                     setActiveModal('shopName')
@@ -353,7 +353,7 @@ export default function ProfileMenu() {
               )}
 
               <MenuItem
-                icon={<Phone size={16} className="text-amber-500" />}
+                icon={<Phone size={16} className="text-teal-500" />}
                 label="Telefon raqamni o‘zgartirish"
                 onClick={() => {
                   setActiveModal('phone')
@@ -362,7 +362,7 @@ export default function ProfileMenu() {
               />
 
               <MenuItem
-                icon={<Key size={16} className="text-amber-500" />}
+                icon={<Key size={16} className="text-teal-500" />}
                 label="Parolni o‘zgartirish"
                 onClick={() => {
                   setActiveModal('password')
@@ -371,7 +371,7 @@ export default function ProfileMenu() {
               />
 
               <MenuItem
-                icon={<Settings size={16} className="text-blue-500" />}
+                icon={<Settings size={16} className="text-emerald-500" />}
                 label="Sozlamalar"
                 onClick={() => {
                   setActiveModal('settings')
@@ -379,40 +379,40 @@ export default function ProfileMenu() {
                 }}
               />
 
-              <div className="border-t border-gray-100 my-1"></div>
+              <div className="border-t border-teal-100 my-1"></div>
 
               {/* Support Section */}
               <div className="relative">
                 <button
                   onClick={() => setSupportOpen(!supportOpen)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 transition-colors duration-150"
                 >
-                  <Headphones size={16} className="text-green-500" />
+                  <Headphones size={16} className="text-teal-500" />
                   Qo‘llab-quvvatlash
                   <ChevronDown size={14} className={`ml-auto transition-transform ${supportOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {supportOpen && (
-                  <div className="ml-6 mb-2 flex flex-col bg-gray-50 rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="ml-6 mb-2 flex flex-col bg-teal-50 rounded-xl border border-teal-100 shadow-sm overflow-hidden">
                     <button
                       onClick={() => window.open('tel:+998970400049', '_blank')}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-teal-100 transition-colors"
                     >
-                      <Phone size={16} className="text-blue-500" />
+                      <Phone size={16} className="text-teal-600" />
                       +998 97 040 0049
                     </button>
                     <button
-                      onClick={() => window.open('https://t.me/sentinel_core', '_blank')}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={() => window.open('https://t.me/shuhrat_k', '_blank')}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-teal-100 transition-colors"
                     >
-                      <Send size={16} className="text-green-500" />
-                      @sentinel_core
+                      <Send size={16} className="text-emerald-600" />
+                      @shuhrat_k
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-gray-100 my-1"></div>
+              <div className="border-t border-teal-100 my-1"></div>
 
               <MenuItem
                 icon={<LogOut size={16} />}
@@ -425,10 +425,10 @@ export default function ProfileMenu() {
               />
 
               {/* SMS Balance */}
-              <div className="mt-3 pt-3 border-t border-gray-100 px-4 pb-2">
-                <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-green-50 p-3 rounded-xl">
+              <div className="mt-3 pt-3 border-t border-teal-100 px-4 pb-2">
+                <div className="flex items-center justify-between bg-gradient-to-r from-teal-50 to-emerald-50 p-3 rounded-xl">
                   <div className="flex items-center gap-2">
-                    <Wallet size={18} className="text-purple-600" />
+                    <Wallet size={18} className="text-teal-600" />
                     <span className="text-sm font-medium text-gray-800">SMS Balans</span>
                   </div>
 
@@ -441,7 +441,7 @@ export default function ProfileMenu() {
                     </div>
                   ) : (
                     <div className="text-right">
-                      <p className={`font-bold text-lg ${smsBalance < 1000 ? 'text-red-600' : 'text-green-600'}`}>
+                      <p className={`font-bold text-lg ${smsBalance < 1000 ? 'text-red-600' : 'text-emerald-600'}`}>
                         {smsBalance.toLocaleString('uz-UZ')} so‘m
                       </p>
                       <p className="text-xs text-gray-600">
@@ -463,15 +463,15 @@ export default function ProfileMenu() {
       <div className="md:hidden">
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-teal-600 rounded-lg transition-colors"
         >
-          <User size={24} className="text-gray-700" />
+          <User size={24} className="text-white" />
         </button>
 
         {/* Mobile Menu Drawer */}
         {mobileMenuOpen && (
           <>
-            <div 
+            <div
               className="fixed inset-0 bg-black/50 z-50 animate-in fade-in duration-200"
               onClick={() => setMobileMenuOpen(false)}
             />
@@ -481,18 +481,18 @@ export default function ProfileMenu() {
             >
               {/* Handle bar */}
               <div className="flex justify-center pt-3 pb-2">
-                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+                <div className="w-12 h-1.5 bg-teal-200 rounded-full" />
               </div>
 
               {/* User Info */}
-              <div className="px-5 py-4 border-b border-gray-100">
+              <div className="px-5 py-4 border-b border-teal-100">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-green-600 flex items-center justify-center text-white font-bold text-xl">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xl">
                     {getInitials(user.username)}
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-lg">{user.username}</p>
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                    <p className="text-sm text-teal-600 flex items-center gap-1 mt-1">
                       <Store size={14} />
                       {user.shop?.shopName || 'Do‘kon'}
                     </p>
@@ -503,11 +503,11 @@ export default function ProfileMenu() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 my-1"></div>
+              <div className="border-t border-teal-100 my-1"></div>
 
               {/* Profile Settings */}
               <div className="py-2">
-                <p className="px-5 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="px-5 py-2 text-xs font-semibold text-teal-500 uppercase tracking-wider">
                   Sozlamalar
                 </p>
                 <button
@@ -515,9 +515,9 @@ export default function ProfileMenu() {
                     setMobileMenuOpen(false)
                     setActiveModal('username')
                   }}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-teal-50 transition-colors"
                 >
-                  <Pencil size={18} className="text-amber-500" />
+                  <Pencil size={18} className="text-teal-500" />
                   <span className="text-sm">Foydalanuvchi nomini o‘zgartirish</span>
                 </button>
 
@@ -527,9 +527,9 @@ export default function ProfileMenu() {
                       setMobileMenuOpen(false)
                       setActiveModal('shopName')
                     }}
-                    className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-teal-50 transition-colors"
                   >
-                    <Store size={18} className="text-amber-500" />
+                    <Store size={18} className="text-teal-500" />
                     <span className="text-sm">Do'kon nomini o'zgartirish</span>
                   </button>
                 )}
@@ -539,9 +539,9 @@ export default function ProfileMenu() {
                     setMobileMenuOpen(false)
                     setActiveModal('phone')
                   }}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-teal-50 transition-colors"
                 >
-                  <Phone size={18} className="text-amber-500" />
+                  <Phone size={18} className="text-teal-500" />
                   <span className="text-sm">Telefon raqamni o‘zgartirish</span>
                 </button>
 
@@ -550,9 +550,9 @@ export default function ProfileMenu() {
                     setMobileMenuOpen(false)
                     setActiveModal('password')
                   }}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-teal-50 transition-colors"
                 >
-                  <Key size={18} className="text-amber-500" />
+                  <Key size={18} className="text-teal-500" />
                   <span className="text-sm">Parolni o‘zgartirish</span>
                 </button>
 
@@ -561,44 +561,44 @@ export default function ProfileMenu() {
                     setMobileMenuOpen(false)
                     setActiveModal('settings')
                   }}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-teal-50 transition-colors"
                 >
-                  <Settings size={18} className="text-blue-500" />
+                  <Settings size={18} className="text-emerald-500" />
                   <span className="text-sm">Sozlamalar</span>
                 </button>
               </div>
 
-              <div className="border-t border-gray-100 my-1"></div>
+              <div className="border-t border-teal-100 my-1"></div>
 
               {/* Support */}
               <div className="py-2">
-                <p className="px-5 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="px-5 py-2 text-xs font-semibold text-teal-500 uppercase tracking-wider">
                   Qo'llab-quvvatlash
                 </p>
                 <button
                   onClick={() => window.open('tel:+998970400049', '_blank')}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-teal-50 transition-colors"
                 >
-                  <Phone size={18} className="text-blue-500" />
+                  <Phone size={18} className="text-teal-600" />
                   <span className="text-sm">+998 97 040 0049</span>
                 </button>
                 <button
                   onClick={() => window.open('https://t.me/sentinel_core', '_blank')}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-gray-700 hover:bg-teal-50 transition-colors"
                 >
-                  <Send size={18} className="text-green-500" />
+                  <Send size={18} className="text-emerald-600" />
                   <span className="text-sm">@sentinel_core</span>
                 </button>
               </div>
 
-              <div className="border-t border-gray-100 my-1"></div>
+              <div className="border-t border-teal-100 my-1"></div>
 
               {/* SMS Balance Mobile */}
               <div className="px-5 py-4">
-                <div className="bg-gradient-to-r from-purple-50 to-green-50 p-4 rounded-xl">
+                <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-4 rounded-xl">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Wallet size={20} className="text-purple-600" />
+                      <Wallet size={20} className="text-teal-600" />
                       <span className="font-medium text-gray-800">SMS Balans</span>
                     </div>
                     {balanceLoading ? (
@@ -610,7 +610,7 @@ export default function ProfileMenu() {
                       </div>
                     ) : (
                       <div className="text-right">
-                        <p className={`font-bold ${smsBalance < 1000 ? 'text-red-600' : 'text-green-600'}`}>
+                        <p className={`font-bold ${smsBalance < 1000 ? 'text-red-600' : 'text-emerald-600'}`}>
                           {smsBalance.toLocaleString('uz-UZ')} so‘m
                         </p>
                       </div>
@@ -626,7 +626,7 @@ export default function ProfileMenu() {
               </div>
 
               {/* Logout Button */}
-              <div className="px-5 py-4 border-t border-gray-100">
+              <div className="px-5 py-4 border-t border-teal-100">
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false)
@@ -643,7 +643,7 @@ export default function ProfileMenu() {
         )}
       </div>
 
-      {/* Modals (same as before) */}
+      {/* Modals */}
       <Modal
         isOpen={activeModal === 'username'}
         onClose={() => setActiveModal(null)}
@@ -659,7 +659,7 @@ export default function ProfileMenu() {
               type="text"
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+              className="w-full px-4 py-2 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
               placeholder="Yangi username"
             />
           </div>
@@ -681,7 +681,7 @@ export default function ProfileMenu() {
               type="text"
               value={newShopName}
               onChange={(e) => setNewShopName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+              className="w-full px-4 py-2 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
               placeholder="Yangi do'kon nomi"
               maxLength={100}
             />
@@ -704,7 +704,7 @@ export default function ProfileMenu() {
               type="tel"
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+              className="w-full px-4 py-2 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
               placeholder="+998 90 123 45 67"
             />
           </div>
@@ -730,7 +730,7 @@ export default function ProfileMenu() {
               type="password"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+              className="w-full px-4 py-2 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
               placeholder="••••••••"
             />
           </div>
@@ -742,7 +742,7 @@ export default function ProfileMenu() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+              className="w-full px-4 py-2 border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
               placeholder="••••••••"
             />
           </div>
@@ -756,28 +756,36 @@ export default function ProfileMenu() {
         onSave={() => setActiveModal(null)}
         hideSaveButton
       >
-        <div className="space-y-6">
-          <div className="bg-purple-50 p-4 rounded-xl">
-            <div className="flex items-center gap-2 text-purple-700 mb-3">
-              <Bell size={18} />
-              <span className="font-medium">SMS Bildirishnomalar</span>
+        <div className="space-y-6 px-1 sm:px-0">
+          <div className="bg-teal-50 p-5 sm:p-4 rounded-2xl sm:rounded-xl">
+
+            {/* Header */}
+            <div className="flex items-center gap-3 text-teal-800 mb-4">
+              <div className="bg-teal-100 p-2 rounded-lg">
+                <Bell size={20} className="sm:w-[18px] sm:h-[18px]" />
+              </div>
+              <span className="font-semibold text-base sm:text-sm">
+                SMS Bildirishnomalar
+              </span>
             </div>
 
-            <div className="space-y-4">
+            {/* Toggles */}
+            <div className="space-y-5 sm:space-y-4">
               <ToggleItem
-                icon={<Calendar size={16} />}
+                icon={<Calendar size={18} />}
                 label="Qarzlarni to‘lash kunida avtomatik SMS"
                 checked={settings.autoSmsOnDueDate}
                 onChange={() => handleToggle('autoSmsOnDueDate')}
               />
 
               <ToggleItem
-                icon={<Clock size={16} />}
+                icon={<Clock size={18} />}
                 label="Qarz muddati o‘tgan mijozlarga har kuni SMS"
                 checked={settings.autoSmsOverdue}
                 onChange={() => handleToggle('autoSmsOverdue')}
               />
             </div>
+
           </div>
         </div>
       </Modal>
@@ -793,10 +801,10 @@ function MenuItem({ icon, label, onClick, danger = false }: any) {
       className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150
         ${danger
           ? 'text-red-600 hover:bg-red-50'
-          : 'text-gray-700 hover:bg-gray-50'
+          : 'text-gray-700 hover:bg-teal-50'
         }`}
     >
-      <span className={danger ? 'text-red-500' : 'text-gray-500'}>{icon}</span>
+      <span className={danger ? 'text-red-500' : 'text-teal-500'}>{icon}</span>
       {label}
     </button>
   )
@@ -809,13 +817,13 @@ function Modal({ isOpen, onClose, title, children, onSave, hideSaveButton = fals
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between p-6 border-b border-teal-100">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-teal-50 rounded-lg transition-colors"
           >
-            <X size={20} className="text-gray-500" />
+            <X size={20} className="text-teal-500" />
           </button>
         </div>
 
@@ -829,14 +837,14 @@ function Modal({ isOpen, onClose, title, children, onSave, hideSaveButton = fals
           <div className="flex gap-3 p-6 pt-0">
             <button
               onClick={onSave}
-              className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-green-600 hover:from-purple-700 hover:to-green-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200"
+              className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200"
             >
               <Save size={18} />
               Saqlash
             </button>
             <button
               onClick={onClose}
-              className="flex-1 border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-xl transition-colors duration-200"
+              className="flex-1 border border-teal-200 hover:bg-teal-50 text-gray-700 font-medium py-3 px-4 rounded-xl transition-colors duration-200"
             >
               Bekor qilish
             </button>
@@ -849,20 +857,42 @@ function Modal({ isOpen, onClose, title, children, onSave, hideSaveButton = fals
 
 function ToggleItem({ icon, label, checked, onChange }: any) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span className="text-gray-400">{icon}</span>
-        <span>{label}</span>
+    <div className="flex items-center justify-between py-3 sm:py-2 gap-3">
+
+      {/* Chap qism */}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <span className="text-teal-500 text-lg sm:text-base shrink-0">
+          {icon}
+        </span>
+
+        <span className="text-base sm:text-sm text-gray-700 font-medium break-words">
+          {label}
+        </span>
       </div>
+
+      {/* Toggle */}
       <button
         type="button"
         onClick={onChange}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/20 ${checked ? 'bg-purple-600' : 'bg-gray-200'
-          }`}
+        className={`
+          shrink-0
+          relative inline-flex 
+          h-7 w-12 sm:h-6 sm:w-11
+          items-center rounded-full
+          transition-all duration-200
+          focus:outline-none focus:ring-2 focus:ring-teal-500/30
+          active:scale-95
+          ${checked ? 'bg-teal-600' : 'bg-gray-300'}
+        `}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-1'
-            }`}
+          className={`
+            inline-block 
+            h-5 w-5 sm:h-4 sm:w-4
+            transform rounded-full bg-white shadow
+            transition-transform duration-200
+            ${checked ? 'translate-x-6' : 'translate-x-1'}
+          `}
         />
       </button>
     </div>

@@ -176,3 +176,6 @@ export const sendSms = (phone: string, message: string) =>
 
 export const getSmsHistoryForPhone = async (phone: string) =>
   request<[]>(`/debts/get-sms-history`, { method: 'POST', body: JSON.stringify({ phone }), credentials: 'include' })
+
+export const getPotentialProfit = () =>
+  request<{ potentialProfit: number, totalProducts: number }>(`/products/potential-profit`, { next: { revalidate: 60 }, credentials: 'include' })

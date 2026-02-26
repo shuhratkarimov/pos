@@ -102,10 +102,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo va sarlavha */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-2xl mb-4">
             <FiLogIn className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-purple-700">Tizimga kirish</h1>
+          <h1 className="text-2xl font-bold text-teal-700">Tizimga kirish</h1>
           <p className="text-gray-600 mt-2">Xush kelibsiz! Ma'lumotlaringizni kiriting</p>
         </div>
 
@@ -118,7 +118,7 @@ export default function LoginPage() {
                 Foydalanuvchi nomi
               </label>
               <div className="relative">
-              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 w-5 h-5" />
+              <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-400 w-5 h-5" />
               <input
                   type="text"
                   name="username"
@@ -141,7 +141,7 @@ export default function LoginPage() {
                 Parol
               </label>
               <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 w-5 h-5" />
+                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-400 w-5 h-5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
@@ -169,7 +169,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-purple-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+              className="w-full bg-teal-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">

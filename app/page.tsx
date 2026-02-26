@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Receipt,
   X,
-  Calculator,
   Printer,
   Plus,
   Minus,
@@ -19,7 +18,11 @@ import {
   Trash2,
   Save,
   DollarSign,
-  Loader2
+  Loader2,
+  ScanBarcodeIcon,
+  Scale,
+  Euro,
+  NotebookPen
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
@@ -56,6 +59,10 @@ export default function Home() {
   const [debtRecords, setDebtRecords] = useState<DebtRecord[]>([])
   const [debtLoading, setDebtLoading] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
+  const [showEditSubtotalModal, setShowEditSubtotalModal] = useState(false)
+  const [editingCartItem, setEditingCartItem] = useState<CustomPriceItem | null>(null)
+  const [editSubtotalInput, setEditSubtotalInput] = useState('')
+  const [editSubtotalValue, setEditSubtotalValue] = useState('')
 
   const loadDebtsForModal = async () => {
     setDebtLoading(true)
@@ -410,15 +417,28 @@ export default function Home() {
       return
     }
 
-    const quantity = Number(
-      (totalPrice / customPriceProduct.price).toFixed(3)
-    )
+    // Muhim qism — hisoblangan miqdorni tekshirish
+    const calculatedQuantity = totalPrice / customPriceProduct.price
+    const roundedQuantity = Number(calculatedQuantity.toFixed(3))
+
+    if (roundedQuantity <= 0) {
+      toast.error("Miqdor noto'g'ri hisoblandi")
+      return
+    }
+
+    if (customPriceProduct.stock < roundedQuantity) {
+      toast.error(
+        `Yetarli mahsulot yo'q! Omborda faqat ${customPriceProduct.stock} ${customPriceProduct.measure} mavjud. ` +
+        `(Siz kiritgan summa ≈ ${roundedQuantity} ${customPriceProduct.measure} ga teng)`
+      )
+      return
+    }
 
     const customItem: CustomPriceItem = {
       id: `${customPriceProduct._id}-custom-${Date.now()}`,
       name: customPriceProduct.name,
       price: customPriceProduct.price,
-      quantity,
+      quantity: roundedQuantity,
       measure: customPriceProduct.measure,
       subtotal: totalPrice,
       isCustom: true,
@@ -426,14 +446,67 @@ export default function Home() {
     }
 
     setCartItems(prev => [...prev, customItem])
-
     toast.success(
-      `${quantity} ${customItem.measure} → ${totalPrice.toLocaleString()} so'm`
+      `${roundedQuantity} ${customItem.measure} → ${totalPrice.toLocaleString()} so'm`
     )
 
     setShowCustomPrice(false)
     setCustomPriceInput('')
     setCustomPriceProduct(null)
+  }
+
+  const handleSaveNewSubtotal = () => {
+    if (!editingCartItem) return
+
+    const newTotalStr = editSubtotalInput.replace(/\D/g, '')
+    const newTotal = Number(newTotalStr)
+
+    if (!newTotal || newTotal <= 0) {
+      toast.error("Iltimos, to‘g‘ri summa kiriting")
+      return
+    }
+
+    const price = editingCartItem.price
+    if (price <= 0) {
+      toast.error("Mahsulot narxi noto‘g‘ri")
+      return
+    }
+
+    const newQuantity = newTotal / price
+    const roundedQuantity = Number(newQuantity.toFixed(3))
+
+    if (roundedQuantity < 0.001) {
+      toast.error("Juda kichik miqdor chiqdi")
+      return
+    }
+
+    // Qo‘shimcha: agar oddiy mahsulot bo‘lsa — stockni tekshirish mumkin
+    if (!editingCartItem.isCustom) {
+      const product = products.find(p => p._id === editingCartItem.id)
+      if (product && roundedQuantity > product.stock) {
+        toast.error(`Yetarli mahsulot yo‘q! Omborda faqat ${product.stock} bor`)
+        return
+      }
+    }
+
+    setCartItems(prev =>
+      prev.map(item =>
+        item.id === editingCartItem.id
+          ? {
+            ...item,
+            quantity: roundedQuantity,
+            subtotal: newTotal,
+            // isCustom: true deb qoldirish shart emas — o‘zgartirish mumkin, lekin hozircha qoldiramiz
+          }
+          : item
+      )
+    )
+
+    toast.success(`Yangi summa: ${newTotal.toLocaleString()} so'm\nMiqdor: ${roundedQuantity} ${editingCartItem.measure}`)
+
+    setShowEditSubtotalModal(false)
+    setEditingCartItem(null)
+    setEditSubtotalInput('')
   }
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number, originalStock?: number) => {
@@ -556,7 +629,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-blue-600 rounded-xl shadow">
+                <div className="p-2 bg-teal-600 rounded-xl shadow">
                   <ShoppingCart className="text-white" size={28} />
                 </div>
                 <div>
@@ -571,9 +644,10 @@ export default function Home() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowScanner(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-xl"
+                className="bg-teal-500 flex items-center gap-2 text-white px-4 py-2 rounded-xl md:hidden"
               >
-                Kamera orqali scan
+                <ScanBarcodeIcon className="text-white" size={28} />
+                Skanerlash
               </button>
               <button
                 onClick={loadAllData}
@@ -626,7 +700,7 @@ export default function Home() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3">
                 {filteredProducts.map((product) => {
                   const isOutOfStock = product.stock === 0
 
@@ -641,9 +715,9 @@ export default function Home() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1">
                           <Hash className="text-gray-400" size={10} />
-                          <span className="text-[0.7rem] font-mono text-gray-500">{product?.code || 'Barcode yo`q'}</span>
+                          <span className="text-[0.6rem] font-mono text-gray-500">{product?.code || 'Barcode yo`q'}</span>
                         </div>
-                        <span className={`text-xs px-2 py-0.5 rounded ${product.stock === 0 ? 'bg-red-100 text-red-700' :
+                        <span className={`text-[0.6rem] px-2 py-0.5 rounded ${product.stock === 0 ? 'bg-red-100 text-red-700' :
                           product.stock < 10 ? 'bg-yellow-100 text-yellow-700' :
                             'bg-green-100 text-green-700'
                           }`}>
@@ -651,7 +725,7 @@ export default function Home() {
                         </span>
                       </div>
 
-                      <p className={`font-medium text-sm mb-2 truncate ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'
+                      <p className={`font-medium text-lg mb-2 truncate ${isOutOfStock ? 'text-gray-400' : 'text-gray-900'
                         }`}>
                         {product.name}
                       </p>
@@ -676,26 +750,28 @@ export default function Home() {
                           disabled={isOutOfStock}
                           className={`p-3 rounded-lg ${isOutOfStock
                             ? 'bg-green-500 text-white cursor-not-allowed'
-                            : 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-violet-400 hover:bg-violet-600 text-white'
                             }`}
                           title={isOutOfStock ? "Mahsulot tugagan" : "Miqdor kiritish"}
                         >
-                          <Calculator size={16} />
+                          <Scale size={18} />
                         </button>
                         <button
                           onClick={() => handleCustomPrice(product)}
-                          className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                          title="Maxsus narx"
+                          disabled={isOutOfStock}
+                          className={`p-3 bg-orange-400 hover:bg-orange-600 text-white rounded-lg transition-colors ${isOutOfStock ? 'cursor-not-allowed' : ''}`}
+                          title={isOutOfStock ? "Mahsulot tugagan" : "Maxsus narx"}
                         >
-                          <DollarSign size={16} />
+                          <Euro size={18} />
                         </button>
                         <button
                           onClick={() => handleAddToCart(product, 1)}
                           disabled={isOutOfStock}
                           className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${isOutOfStock
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow'
+                            : 'bg-teal-500 hover:bg-teal-600 text-white shadow-sm hover:shadow'
                             }`}
+                          title={isOutOfStock ? "Mahsulot tugagan" : "Bir dona qo'shish"}
                         >
                           +1
                         </button>
@@ -714,7 +790,7 @@ export default function Home() {
 
               {loading && (
                 <div className="py-12 text-center">
-                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-teal-500"></div>
                   <p className="mt-4 text-gray-400">Yuklanmoqda...</p>
                 </div>
               )}
@@ -725,7 +801,7 @@ export default function Home() {
           <div className="lg:col-span-1">
             <div className="sticky top-6">
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
-                <div className="bg-blue-600 p-4">
+                <div className="bg-teal-600 p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <ShoppingCart className="text-white" size={22} />
@@ -733,7 +809,7 @@ export default function Home() {
                     </div>
                     <div className="text-right">
                       <span className="text-sm text-blue-100">
-                        {cartStats.uniqueItems} ta mahsulot
+                        {cartStats.uniqueItems ? `${cartStats.uniqueItems} ta mahsulot` : `Mahsulotlar yo'q`}
                       </span>
                       {cartStats.customItems > 0 && (
                         <div className="text-xs text-purple-200 mt-1">
@@ -826,10 +902,18 @@ export default function Home() {
                                 )}
                               </div>
                               <div className="text-right">
-                                <p className="text-green-600 font-bold">
+                                <span
+                                  className="text-green-600 text-xl font-bold cursor-pointer hover:text-green-700 transition-colors"
+                                  onClick={() => {
+                                    // Endi farq qilmaydi — har qanday item uchun subtotal modalini ochamiz
+                                    setEditingCartItem(item)
+                                    setEditSubtotalInput(item.subtotal.toLocaleString('uz-UZ'))
+                                    setShowEditSubtotalModal(true)
+                                  }}
+                                >
                                   {item.subtotal.toLocaleString()}
-                                </p>
-                                <p className="text-gray-400 text-xs">so'm</p>
+                                </span>
+                                <span className="text-gray-800 text-xs"> so'm</span>
                               </div>
                             </div>
 
@@ -841,7 +925,7 @@ export default function Home() {
                                     item.quantity - 1,
                                     product?.stock
                                   )}
-                                  className="w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center transition-colors"
+                                  className="w-10 h-10 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center transition-colors"
                                 >
                                   <Minus size={18} />
                                 </button>
@@ -849,10 +933,10 @@ export default function Home() {
                                 {item.isCustom ? (
                                   <button
                                     onClick={() => startEditPrice(item)}
-                                    className="w-7 h-7 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-lg flex items-center justify-center transition-colors"
+                                    className="w-10 h-10 bg-purple-100 border border-purple-300 hover:bg-purple-200 text-purple-600 rounded-full flex items-center justify-center transition-colors"
                                     title="Narxni tahrirlash"
                                   >
-                                    <Edit2 size={14} />
+                                    <Edit2 size={18} />
                                   </button>
                                 ) : (
                                   <button
@@ -880,7 +964,7 @@ export default function Home() {
                                     item.quantity + 1,
                                     product?.stock
                                   )}
-                                  className="w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center transition-colors"
+                                  className="w-10 h-10 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center transition-colors"
                                 >
                                   <Plus size={18} />
                                 </button>
@@ -888,9 +972,9 @@ export default function Home() {
 
                               <button
                                 onClick={() => setCartItems(prev => prev.filter(i => i.id !== item.id))}
-                                className="px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors"
+                                className="px-3 py-3 hover:cursor-pointer bg-red-500 hover:bg-red-600 text-white rounded-full text-sm transition-colors"
                               >
-                                <Trash2 size={12} />
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </div>
@@ -912,7 +996,7 @@ export default function Home() {
                     <div className="flex gap-3">
                       <button
                         onClick={handleCheckout}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow hover:shadow-md"
+                        className="flex-1 hover:cursor-pointer bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow hover:shadow-md"
                       >
                         <Receipt size={18} />
                         Sotish
@@ -932,7 +1016,7 @@ export default function Home() {
                           total: cartStats.totalAmount,
                           paymentMethod: 'naqd'
                         })}
-                        className="px-4 py-2.5 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+                        className="px-4 py-2.5 hover:cursor-pointer bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
                       >
                         <Printer size={16} />
                       </button>
@@ -940,22 +1024,22 @@ export default function Home() {
                         onClick={() => setShowDebtModal(true)}
                         disabled={cartItems.length === 0}
                         className={`
-      px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow hover:shadow-md
+      px-5 py-2.5 rounded-lg font-bold flex hover:cursor-pointer items-center gap-2 transition-all shadow hover:shadow-md
       ${cartItems.length === 0
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-amber-600 hover:bg-amber-700 text-white'}
     `}
                       >
-                        <DollarSign size={18} />
-                        Qarzga yozish
+                        <NotebookPen size={18} />
+                        Qarz
                       </button>
                     </div>
 
                     <button
                       onClick={() => setCartItems([])}
-                      className="w-full mt-3 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm transition-colors shadow-sm"
+                      className="w-full hover:cursor-pointer flex items-center justify-center gap-2 mt-3 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-gray-700 border border-gray-300 rounded-lg text-sm transition-colors shadow-sm"
                     >
-                      Savatchani tozalash
+                      Savatchani tozalash <Trash2 size={16} />
                     </button>
                   </div>
                 )}
@@ -971,14 +1055,15 @@ export default function Home() {
           <div className="bg-white rounded-xl max-w-sm w-full border border-gray-300 shadow-2xl">
             <input
               type="tel"
-              inputMode="numeric"
+              inputMode="none"
               pattern="[0-9]*"
+              readOnly={true}
               value={keypadValue}
-              onChange={(e) => {
-                // faqat raqam va nuqta qoldiramiz
-                const val = e.target.value.replace(/[^0-9.]/g, '');
-                setKeypadValue(val);
-              }}
+              // onChange={(e) => {
+              //   // faqat raqam va nuqta qoldiramiz
+              //   const val = e.target.value.replace(/[^0-9.]/g, '');
+              //   setKeypadValue(val);
+              // }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleKeypadInput('enter');
@@ -991,13 +1076,6 @@ export default function Home() {
                 }
               }}
               className="absolute opacity-0 h-0 w-0 pointer-events-none"
-              autoFocus
-              ref={(el) => {
-                if (el) {
-                  // modal ochilganda darhol focus qilamiz
-                  setTimeout(() => el.focus(), 100);
-                }
-              }}
             />
             {/* Header */}
             <div className="p-4 border-b border-gray-200">
@@ -1135,6 +1213,116 @@ export default function Home() {
         </div>
       )}
 
+      {showEditSubtotalModal && editingCartItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-50 to-green-100 p-5 border-b">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Jami summani o‘zgartirish</h3>
+                  <p className="text-gray-700 mt-1">{editingCartItem.name}</p>
+                </div>
+                <button
+                  onClick={() => setShowEditSubtotalModal(false)}
+                  className="p-2 hover:bg-gray-200 rounded-full"
+                >
+                  <X size={24} className="text-gray-600" />
+                </button>
+              </div>
+            </div>
+
+            {/* Display + numpad */}
+            <div className="p-4">
+              <div className="mb-6 bg-gray-50 border rounded-xl p-5 text-right">
+                <div className="text-2xl font-bold font-mono text-gray-900">
+                  {editSubtotalValue || '0'}
+                  <span className="text-xl text-gray-500 ml-1">so'm</span>
+                </div>
+              </div>
+
+              {/* Numpad */}
+              <div className="grid grid-cols-4 gap-3 select-none">
+                {['1', '2', '3', '⌫', '4', '5', '6', 'C', '7', '8', '9', '00', '0', '.', ''].map((key, i) => {
+                  if (key === '') return <div key={i} />; // bo‘sh joy
+
+                  const isSpecial = ['⌫', 'C', '00', '.'].includes(key);
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        if (key === '⌫') {
+                          const digits = editSubtotalValue.replace(/\D/g, '').slice(0, -1);
+                          setEditSubtotalValue(digits ? Number(digits).toLocaleString('uz-UZ') : '');
+                        } else if (key === 'C') {
+                          setEditSubtotalValue('');
+                        } else {
+                          let current = editSubtotalValue.replace(/\D/g, '');
+                          let next = current + (key === '00' ? '00' : key);
+
+                          if (key === '.' && current.includes('.')) return;
+                          if (next.startsWith('0') && next.length > 1 && key !== '.') {
+                            next = next.replace(/^0+/, '');
+                          }
+
+                          setEditSubtotalValue(Number(next).toLocaleString('uz-UZ'));
+                        }
+                      }}
+                      className={`
+                  h-12 text-lg font-bold rounded-xl transition-all active:scale-95
+                  ${isSpecial
+                          ? key === '⌫' || key === 'C'
+                            ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                        }
+                `}
+                    >
+                      {key === '⌫' ? '⌫' : key}
+                    </button>
+                  );
+                })}
+
+                {/* Saqlash tugmasi */}
+                <button
+                  onClick={() => {
+                    const newTotalStr = editSubtotalValue.replace(/\D/g, '');
+                    const newTotal = Number(newTotalStr);
+
+                    if (!newTotal || newTotal <= 0) {
+                      toast.error("To‘g‘ri summa kiriting");
+                      return;
+                    }
+
+                    const price = editingCartItem.price;
+                    const newQty = newTotal / price;
+                    const roundedQty = Number(newQty.toFixed(3));
+
+                    setCartItems(prev => prev.map(it =>
+                      it.id === editingCartItem.id
+                        ? { ...it, quantity: roundedQty, subtotal: newTotal }
+                        : it
+                    ));
+
+                    toast.success(`∑ ${newTotal.toLocaleString()} so'm\nMiqdor: ${roundedQty} ${editingCartItem.measure}`);
+                    setShowEditSubtotalModal(false);
+                    setEditingCartItem(null);
+                    setEditSubtotalValue('');
+                  }}
+                  disabled={!editSubtotalValue || Number(editSubtotalValue.replace(/\D/g, '')) <= 0}
+                  className="col-span-4 mt-4 h-10 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
+                >
+                  Saqlash
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDebtModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-200 max-h-[90vh] overflow-hidden flex flex-col">
@@ -1143,7 +1331,7 @@ export default function Home() {
             <div className="p-2 border-b flex items-center justify-between bg-gradient-to-r from-amber-50 to-amber-100">
               <div className="flex items-center gap-3">
                 <DollarSign className="text-amber-600" size={24} />
-                <h2 className="text-lg md:text-xl font-bold text-gray-900">Qarzga yozish</h2>
+                <h2 className="text-lg md:text-xl font-bold text-gray-900">Qarz</h2>
               </div>
               <button
                 onClick={() => {
@@ -1289,13 +1477,14 @@ export default function Home() {
           <div className="bg-white rounded-xl max-w-sm w-full border border-gray-300 shadow-2xl">
             <input
               type="tel"
-              inputMode="numeric"
+              inputMode="none"
+              readOnly={true}
               pattern="[0-9]*"
               value={customPriceInput.replace(/\D/g, '')} // faqat raqamlar
-              onChange={(e) => {
-                const raw = e.target.value.replace(/\D/g, '');
-                setCustomPriceInput(raw ? Number(raw).toLocaleString('uz-UZ') : '');
-              }}
+              // onChange={(e) => {
+              //   const raw = e.target.value.replace(/\D/g, '');
+              //   setCustomPriceInput(raw ? Number(raw).toLocaleString('uz-UZ') : '');
+              // }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleKeypadInput('enter');
@@ -1308,7 +1497,6 @@ export default function Home() {
                 }
               }}
               className="absolute opacity-0 h-0 w-0 pointer-events-none"
-              autoFocus
               ref={(el) => {
                 if (el) setTimeout(() => el.focus(), 100);
               }}

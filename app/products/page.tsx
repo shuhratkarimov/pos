@@ -8,6 +8,7 @@ import {
   addProduct,
   updateProduct,
   deleteProduct,
+  getPotentialProfit,
 } from '@/lib/api'
 import {
   Plus,
@@ -82,6 +83,7 @@ export default function ProductsPage() {
   const [printSize, setPrintSize] = useState<'small' | 'large'>('small')
   const [printMode, setPrintMode] = useState<'individual' | 'a4'>('individual');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait')
+  const [potentialProfit, setPotentialProfit] = useState(0);
 
   const handleGenerateBarcode = () => {
     const newCode = generateBarcode()
@@ -290,6 +292,22 @@ export default function ProductsPage() {
       setLoading(false)
     }
   }
+
+  const loadPotentialProfit = async () => {
+    try {
+      setLoading(true)
+      const data = await getPotentialProfit()
+      setPotentialProfit(data.potentialProfit)
+    } catch (error) {
+      toast.error('Yuklashda xatolik')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadPotentialProfit()
+  }, [])
 
   const filterAndSortProducts = () => {
     let filtered = [...products]
@@ -503,13 +521,20 @@ export default function ProductsPage() {
     const outOfStock = products.filter(p => p.stock === 0).length
     const averagePrice = total > 0 ? products.reduce((sum, p) => sum + p.price, 0) / total : 0
 
+    // Yangi: potentsial foyda
+    const potentialProfit = products.reduce((sum, p) => {
+      const profitPerUnit = (p.price || 0) - (p.boughtPrice || 0)
+      return sum + (profitPerUnit * (p.stock || 0))
+    }, 0)
+
     return {
       total,
       totalStock,
       totalValue,
       lowStock,
       outOfStock,
-      averagePrice
+      averagePrice,
+      potentialProfit,
     }
   }, [products])
 
@@ -571,7 +596,7 @@ export default function ProductsPage() {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-blue-600 rounded-xl shadow">
+                <div className="p-2 bg-teal-600 rounded-xl shadow">
                   <Package className="text-white" size={28} />
                 </div>
                 <div>
@@ -605,7 +630,7 @@ export default function ProductsPage() {
               </button>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-3 transition-all shadow hover:shadow-md"
+                className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold flex items-center gap-3 transition-all shadow hover:shadow-md"
               >
                 <Plus size={20} />
                 Yangi mahsulot
@@ -614,7 +639,7 @@ export default function ProductsPage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
@@ -636,6 +661,21 @@ export default function ProductsPage() {
                 </div>
                 <div className="p-2 bg-green-100 rounded-lg">
                   <DollarSign className="text-green-600" size={20} />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm mb-1">Potentsial foyda</p>
+                  <p className="text-2xl font-bold text-emerald-700">
+                    {getStats.potentialProfit.toLocaleString()}
+                  </p>
+                  <p className="text-gray-500 text-xs">so'm (hammasi sotilsa)</p>
+                </div>
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <TrendingUp className="text-emerald-600" size={20} />
                 </div>
               </div>
             </div>
@@ -672,7 +712,7 @@ export default function ProductsPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 lg:gap-4">
             {/* Search */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative mb-4">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"

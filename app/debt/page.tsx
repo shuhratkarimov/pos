@@ -429,8 +429,8 @@ export default function DebtPage() {
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
             <div>
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <div className="p-2 bg-red-600 rounded-xl shadow">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-teal-600 rounded-xl shadow">
                   <AlertCircle className="text-white" size={28} />
                 </div>
                 <div>
@@ -446,7 +446,7 @@ export default function DebtPage() {
 
             <button
               onClick={() => setShowDebtModal(true)}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow hover:shadow-md"
+              className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow hover:shadow-md"
             >
               <Plus size={20} />
               Yangi qarz qo'shish
@@ -458,7 +458,7 @@ export default function DebtPage() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm mb-1">Qolgan Qarz</p>
+                  <p className="text-gray-600 text-sm mb-1">Qolgan qarz</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.totalDebt.toLocaleString()}</p>
                   <p className="text-gray-500 text-xs">{stats.pendingCount} ta qarz</p>
                 </div>
@@ -471,7 +471,7 @@ export default function DebtPage() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm mb-1">To'langan Qarz</p>
+                  <p className="text-gray-600 text-sm mb-1">To'langan qarz</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.totalPaid.toLocaleString()}</p>
                   <p className="text-gray-500 text-xs">{stats.paidCount} ta to'lov</p>
                 </div>
