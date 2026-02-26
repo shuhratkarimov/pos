@@ -1327,7 +1327,7 @@ export default function ProductsPage() {
         {selectedProducts.size > 0 && (
           <button
             onClick={() => setShowBarcodeModal(true)}
-            className="fixed bottom-8 right-8 px-7 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl font-bold flex items-center gap-3 shadow-2xl hover:scale-105 active:scale-95 transition-all z-50"
+            className="fixed bottom-8 right-8 px-7 py-4 bg-teal-600 text-white rounded-3xl font-bold flex items-center gap-3 shadow-2xl hover:bg-teal-700 transition-all z-50"
           >
             <Printer size={22} />
             Barcode chop etish ({selectedProducts.size})
