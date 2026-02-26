@@ -715,7 +715,7 @@ export default function Home() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1">
                           <Hash className="text-gray-400" size={10} />
-                          <span className="text-[0.6rem] font-mono text-gray-500">{product?.code || 'Barcode yo`q'}</span>
+                          <span className="text-[0.6rem] font-mono text-gray-500">{product?.code?.slice(-5) || 'Barcode yo`q'}</span>
                         </div>
                         <span className={`text-[0.6rem] px-2 py-0.5 rounded ${product.stock === 0 ? 'bg-red-100 text-red-700' :
                           product.stock < 10 ? 'bg-yellow-100 text-yellow-700' :
@@ -748,30 +748,32 @@ export default function Home() {
                             }
                           }}
                           disabled={isOutOfStock}
-                          className={`p-3 rounded-lg ${isOutOfStock
-                            ? 'bg-green-500 text-white cursor-not-allowed'
-                            : 'bg-violet-400 hover:bg-violet-600 text-white'
+                          className={`h-9 sm:h-10 w-9 sm:w-10 flex items-center justify-center rounded-lg ${isOutOfStock
+                              ? 'bg-green-500 text-white cursor-not-allowed'
+                              : 'bg-violet-400 hover:bg-violet-600 text-white'
                             }`}
-                          title={isOutOfStock ? "Mahsulot tugagan" : "Miqdor kiritish"}
                         >
                           <Scale size={18} />
                         </button>
+
                         <button
                           onClick={() => handleCustomPrice(product)}
                           disabled={isOutOfStock}
-                          className={`p-3 bg-orange-400 hover:bg-orange-600 text-white rounded-lg transition-colors ${isOutOfStock ? 'cursor-not-allowed' : ''}`}
-                          title={isOutOfStock ? "Mahsulot tugagan" : "Maxsus narx"}
+                          className={`h-9 sm:h-10 w-9 sm:w-10 flex items-center justify-center rounded-lg ${isOutOfStock
+                              ? 'bg-orange-400 text-white cursor-not-allowed'
+                              : 'bg-orange-400 hover:bg-orange-600 text-white'
+                            }`}
                         >
                           <Euro size={18} />
                         </button>
+
                         <button
                           onClick={() => handleAddToCart(product, 1)}
                           disabled={isOutOfStock}
-                          className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${isOutOfStock
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-teal-500 hover:bg-teal-600 text-white shadow-sm hover:shadow'
+                          className={`h-9 sm:h-10 w-9 sm:w-10 flex-1 rounded-lg text-sm font-semibold transition-all ${isOutOfStock
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-teal-500 hover:bg-teal-600 text-white shadow-sm hover:shadow'
                             }`}
-                          title={isOutOfStock ? "Mahsulot tugagan" : "Bir dona qo'shish"}
                         >
                           +1
                         </button>
