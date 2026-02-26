@@ -21,6 +21,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
   const [cameraInitializing, setCameraInitializing] = useState(true)
   const videoTrackRef = useRef<MediaStreamTrack | null>(null)
   const animationRef = useRef<number>(0)
+  const isClosingRef = useRef<boolean>(false)
 
   // Scan line animatsiyasi
   useEffect(() => {
@@ -103,6 +104,50 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
     }
   }
 
+  // Scannerni to'xtatish funksiyasi
+  const stopScanner = async () => {
+    if (isClosingRef.current) return
+    isClosingRef.current = true
+
+    try {
+      if (scannerRef.current) {
+        await scannerRef.current.stop().catch(() => {})
+        scannerRef.current = null
+      }
+      
+      if (videoTrackRef.current) {
+        videoTrackRef.current.stop()
+        videoTrackRef.current = null
+      }
+    } catch (err) {
+      console.log('Stop scanner error:', err)
+    } finally {
+      isClosingRef.current = false
+    }
+  }
+
+  // Handle successful scan
+  const handleSuccessfulScan = async (decodedText: string) => {
+    if (isScanningRef.current || isClosingRef.current) return
+    
+    isScanningRef.current = true
+    
+    try {
+      playBeep()
+      if (navigator.vibrate) navigator.vibrate(50)
+
+      // Scannerni to'xtatish
+      await stopScanner()
+
+      // Callbacklarni chaqirish
+      onScan(decodedText)
+      onClose()
+    } catch (err) {
+      console.error('Scan handling error:', err)
+      isScanningRef.current = false
+    }
+  }
+
   useEffect(() => {
     let mounted = true
     let mediaStream: MediaStream | null = null
@@ -167,37 +212,19 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
           backCamera.id,
           config,
           async (decodedText) => {
-            if (!mounted || isScanningRef.current) return
-            isScanningRef.current = true
-            playBeep()
-            if (navigator.vibrate) navigator.vibrate(50)
-
-            // Scan qilingan barcode-ni jo'natish
-            onScan(decodedText)
-
-            // Scannerni to'xtatish va kamera track-ni stop qilish
-            try {
-              await html5QrCode.stop()
-            } catch (err) {
-              console.log('Stop scanner error:', err)
+            // Successful scan
+            if (mounted && !isScanningRef.current && !isClosingRef.current) {
+              await handleSuccessfulScan(decodedText)
             }
-
-            if (videoTrackRef.current) {
-              try {
-                videoTrackRef.current.stop()
-              } catch (err) {
-                console.log('Stop video track error:', err)
-              }
-            }
-
-            onClose()
           },
           (errorMessage) => {
             // xatoliklarni e'tiborsiz qoldirish
           }
         )
 
-        setCameraInitializing(false)
+        if (mounted) {
+          setCameraInitializing(false)
+        }
 
       } catch (err: any) {
         console.error('Scanner xatosi:', err)
@@ -220,20 +247,9 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
 
     return () => {
       mounted = false
-
-      if (videoTrackRef.current) {
-        try {
-          videoTrackRef.current.stop()
-        } catch (err) { }
-      }
-
-      if (scannerRef.current) {
-        try {
-          scannerRef.current.stop().catch(() => { })
-        } catch (err) { }
-      }
+      stopScanner()
     }
-  }, [onScan, onClose])
+  }, [onScan, onClose]) // onScan va onClose dependency sifatida qoldirildi
 
   return (
     <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-[200] p-4 animate-in fade-in duration-300">
@@ -256,10 +272,12 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
             type="text"
             autoFocus={!isMobile}
             className="absolute top-0 left-0 w-full h-full opacity-0 pointer-events-none"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                onScan(e.currentTarget.value)
+            onKeyDown={async (e) => {
+              if (e.key === 'Enter' && !isScanningRef.current && !isClosingRef.current) {
+                const value = e.currentTarget.value
                 e.currentTarget.value = ''
+                await stopScanner()
+                onScan(value)
                 onClose()
               }
             }}
@@ -304,18 +322,6 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
                 <div className="relative w-[280px] h-[180px]">
                   {/* Tashqi glow effekti */}
                   <div className="absolute -inset-2 bg-blue-500/10 rounded-2xl blur-xl"></div>
-
-                  {/* FAQAT 4 TA BURCHAK - hech qanday to'liq ramka yo'q */}
-                  {/* <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-blue-500 rounded-tl-2xl"></div>
-                  <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-blue-500 rounded-tr-2xl"></div>
-                  <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-blue-500 rounded-bl-2xl"></div>
-                  <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-blue-500 rounded-br-2xl"></div> */}
-
-                  {/* Burchaklardagi yorug'lik nuqtalari
-                  <div className="absolute top-0 left-0 w-2 h-2 bg-blue-500 rounded-full filter blur-sm"></div>
-                  <div className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full filter blur-sm"></div>
-                  <div className="absolute bottom-0 left-0 w-2 h-2 bg-blue-500 rounded-full filter blur-sm"></div>
-                  <div className="absolute bottom-0 right-0 w-2 h-2 bg-blue-500 rounded-full filter blur-sm"></div> */}
 
                   {/* Harakatlanuvchi scan chizig'i */}
                   <div
@@ -380,16 +386,7 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
         {/* Yopish tugmasi */}
         <button
           onClick={async () => {
-            if (scannerRef.current) {
-              try {
-                await scannerRef.current.stop()
-              } catch (err) { }
-            }
-            if (videoTrackRef.current) {
-              try {
-                videoTrackRef.current.stop()
-              } catch (err) { }
-            }
+            await stopScanner()
             onClose()
           }}
           className="absolute -bottom-14 left-1/2 transform -translate-x-1/2 bg-red-500/20 hover:bg-red-500/30 text-white px-8 py-3 rounded-xl font-medium transition-all backdrop-blur-md border border-red-500/30 flex items-center gap-2 shadow-lg hover:shadow-red-500/10"
