@@ -1343,7 +1343,7 @@ export default function ProductsPage() {
             <div className="px-5 py-4 sm:px-6 sm:py-5 border-b flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-blue-100 rounded-xl">
-                  <Printer className="text-blue-600" size={26} />
+                  <Printer className="text-teal-600" size={26} />
                 </div>
                 <div>
                   <h3 className="text-lg sm:text-xl font-bold">Barcode chop etish</h3>
@@ -1370,7 +1370,7 @@ export default function ProductsPage() {
                   <button
                     onClick={() => setPrintSize('small')}
                     className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${printSize === 'small'
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-teal-600 bg-teal-50'
                       : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
@@ -1381,7 +1381,7 @@ export default function ProductsPage() {
                   <button
                     onClick={() => setPrintSize('large')}
                     className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${printSize === 'large'
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-teal-600 bg-teal-50'
                       : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
@@ -1398,7 +1398,7 @@ export default function ProductsPage() {
                   <button
                     onClick={() => setPrintMode('individual')}
                     className={`p-4 rounded-xl border-2 text-left transition-all text-sm ${printMode === 'individual'
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-teal-600 bg-teal-50'
                       : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
@@ -1411,7 +1411,7 @@ export default function ProductsPage() {
                   <button
                     onClick={() => setPrintMode('a4')}
                     className={`p-4 rounded-xl border-2 text-left transition-all text-sm ${printMode === 'a4'
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-teal-600 bg-teal-50'
                       : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
@@ -1431,7 +1431,7 @@ export default function ProductsPage() {
                     <button
                       onClick={() => setOrientation('portrait')}
                       className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${orientation === 'portrait'
-                        ? 'border-blue-600 bg-blue-50'
+                        ? 'border-teal-600 bg-teal-50'
                         : 'border-gray-200 hover:border-gray-300'
                         }`}
                     >
@@ -1442,7 +1442,7 @@ export default function ProductsPage() {
                     <button
                       onClick={() => setOrientation('landscape')}
                       className={`p-4 rounded-xl border-2 text-center transition-all text-sm ${orientation === 'landscape'
-                        ? 'border-blue-600 bg-blue-50'
+                        ? 'border-teal-600 bg-teal-50'
                         : 'border-gray-200 hover:border-gray-300'
                         }`}
                     >
@@ -1480,7 +1480,7 @@ export default function ProductsPage() {
               </button>
               <button
                 onClick={handlePrintBarcodes}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2"
               >
                 <Printer size={18} />
                 Chop etish
