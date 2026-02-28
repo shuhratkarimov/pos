@@ -16,6 +16,7 @@ const debtSchema = new Schema({
     });
 
 debtSchema.index({ shop: 1 });
+debtSchema.index({ customerName: 1 });
 
 const Debt = mongoose.model("Debt", debtSchema);
 module.exports = Debt;

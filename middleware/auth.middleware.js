@@ -12,7 +12,8 @@ const authMiddleware = async (req, res, next) => {
     req.user = {
       id: payload.id,
       role: user.role,
-      shop: user.shop || null
+      shop: user.shop || null,
+      tenantId: user.shop || null
     };
     next();
   } catch (err) {

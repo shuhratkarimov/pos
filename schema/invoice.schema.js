@@ -13,4 +13,6 @@ const InvoiceSchema = new mongoose.Schema({
 
 InvoiceSchema.index({ shop: 1 });
 
-module.exports = mongoose.model("Invoice", InvoiceSchema);
+const Invoice = mongoose.model("Invoice", InvoiceSchema);
+module.exports = Invoice;
+
