@@ -22,8 +22,6 @@ export default function DebtPage() {
   const { user } = useUser()
   // Barcha state'lar shu yerda (sizda allaqachon bor)
   const [debts, setDebts] = useState<DebtRecord[]>([])
-  const [filteredDebts, setFilteredDebts] = useState<DebtRecord[]>([])
-  const [displayedDebts, setDisplayedDebts] = useState<DebtRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -31,7 +29,6 @@ export default function DebtPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<DebtRecord>>({})
   const [dateFilter, setDateFilter] = useState<'all' | 'overdue' | 'today' | 'week'>('all')
-  const [currentPage, setCurrentPage] = useState(1)
   const observerTarget = useRef<HTMLDivElement>(null)
   const updateHandledRef = useRef(false)
   const [showDebtModal, setShowDebtModal] = useState(false)
@@ -51,6 +48,9 @@ export default function DebtPage() {
   const [preFillAmount, setPreFillAmount] = useState<number | null>(null)
   const [isSendingSms, setIsSendingSms] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const m = searchParams.get('mode')
@@ -94,8 +94,12 @@ export default function DebtPage() {
   }, [searchParams, debts])
 
   useEffect(() => {
-    loadDebts()
-  }, [])
+    loadDebts(true);
+  }, [searchTerm, statusFilter, dateFilter]);
+
+  useEffect(() => {
+    loadDebts(true);   // dastlabki yuklash
+  }, []);
 
   useEffect(() => {
     if (mode === 'new' && preFillAmount) {
@@ -106,58 +110,69 @@ export default function DebtPage() {
     }
   }, [mode, preFillAmount])
 
-  useEffect(() => {
-    filterDebts()
-    setCurrentPage(1) // Filter o'zgarganda 1-sahifaga qaytish
-  }, [debts, searchTerm, statusFilter, dateFilter])
 
-  useEffect(() => {
-    // Scrollga qarab yangi qarzlarni ko'rsatish
-    const startIndex = 0
-    const endIndex = currentPage * ITEMS_PER_PAGE
-    setDisplayedDebts(filteredDebts.slice(0, endIndex))
-  }, [filteredDebts, currentPage])
-
-  // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting &&
+        if (
+          entries[0].isIntersecting &&
+          !loading &&
           !loadingMore &&
-          displayedDebts.length < filteredDebts.length) {
-          setLoadingMore(true)
-          setTimeout(() => {
-            setCurrentPage(prev => prev + 1)
-            setLoadingMore(false)
-          }, 300)
+          hasMore
+        ) {
+          loadDebts();   // keyingi sahifa
         }
       },
-      { threshold: 0.5 }
-    )
+      { threshold: 0.1 }
+    );
 
     if (observerTarget.current) {
-      observer.observe(observerTarget.current)
+      observer.observe(observerTarget.current);
     }
 
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current)
-      }
-    }
-  }, [loadingMore, displayedDebts.length, filteredDebts.length])
+    return () => observer.disconnect();
+  }, [loading, loadingMore, hasMore, page, searchTerm, statusFilter, dateFilter]);
 
-  const loadDebts = async () => {
+  const loadDebts = async (reset = false) => {
+    if (reset) {
+      setDebts([]);
+      setPage(1);
+      setHasMore(true);
+    }
+
+    if (!hasMore && !reset) return;
+
     try {
-      setLoading(true)
-      const data = await getDebtRecords()
-      setDebts(data)
-      toast.success('Qarzlar yuklandi')
-    } catch (error) {
-      toast.error('Qarzlarni yuklashda xatolik')
+      reset ? setLoading(true) : setLoadingMore(true);
+
+      const params = {
+        page: reset ? 1 : page,
+        limit: ITEMS_PER_PAGE,
+        search: searchTerm.trim(),
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        // date filter hali qo‘llab-quvvatlanmasa — keyinroq qo‘shiladi
+        // sortBy: 'dueDate', sortDir: 'asc'  — agar kerak bo‘lsa
+      };
+
+      const response = await getDebtRecords(params);
+      // console.log(response)
+      const newDebts = response.data || [];
+
+      setDebts(prev => reset ? newDebts : [...prev, ...newDebts]);
+      setHasMore(false);
+      setTotal(0);
+
+      if (!reset) {
+        setPage(prev => prev + 1);
+      }
+    } catch (err) {
+      toast.error("Ma'lumotlarni yuklashda xatolik");
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
+      setLoadingMore(false);
     }
-  }
+  };
 
   useEffect(() => {
     // Agar query parametrlar yo'q bo'lsa (masalan, qo'lda /debt ga kirilganda)
@@ -212,7 +227,7 @@ export default function DebtPage() {
     filtered.sort((a, b) =>
       new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
     )
-    setFilteredDebts(filtered)
+    setDebts(filtered)
   }
 
   const handleAddDebt = async () => {
@@ -484,7 +499,7 @@ export default function DebtPage() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 text-sm mb-1">Muddati O'tgan</p>
+                  <p className="text-gray-600 text-sm mb-1">Muddati o'tgan</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.overdueCount}</p>
                   <p className="text-gray-500 text-xs">{stats.overdueAmount.toLocaleString()} so'm</p>
                 </div>
@@ -843,9 +858,6 @@ export default function DebtPage() {
                   Qarzlar ro'yxati
                 </h2>
               </div>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                {displayedDebts.length} / {filteredDebts.length} ta qarz
-              </span>
             </div>
           </div>
 
@@ -855,7 +867,7 @@ export default function DebtPage() {
                 <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-red-600"></div>
                 <p className="mt-4 text-gray-400">Qarzlar yuklanmoqda...</p>
               </div>
-            ) : displayedDebts.length === 0 ? (
+            ) : debts.length === 0 ? (
               <div className="py-12 flex flex-row items-center justify-center text-center gap-2">
                 <AlertCircle className="text-gray-300" size={48} />
                 <h3 className="text-xl font-semibold text-gray-400">Qarzlar topilmadi</h3>
@@ -880,7 +892,7 @@ export default function DebtPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {displayedDebts.map((debt) => (
+                    {debts.map((debt) => (
                       <tr
                         key={debt._id}
                         className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -1062,27 +1074,24 @@ export default function DebtPage() {
                   </tbody>
                 </table>
 
-                {/* Loading More Indicator */}
-                {displayedDebts.length > 0 && displayedDebts.length < filteredDebts.length && (
-                  <div ref={observerTarget} className="py-6 text-center border-t border-gray-200">
+                {hasMore && (
+                  <div ref={observerTarget} className="py-8 flex justify-center">
                     {loadingMore ? (
-                      <div className="flex items-center justify-center gap-2 text-gray-600">
-                        <Loader2 className="animate-spin" size={20} />
-                        <span>Yana qarzlar yuklanmoqda...</span>
+                      <div className="flex items-center gap-3 text-gray-600">
+                        <Loader2 className="animate-spin" size={24} />
+                        <span>Yana yuklanmoqda...</span>
                       </div>
                     ) : (
-                      <div className="text-gray-500 text-sm">
-                        Pastga tushing yoki kuting...
-                      </div>
+                      <div className="text-gray-400 text-sm">Pastga tushing</div>
                     )}
                   </div>
                 )}
 
                 {/* End of List */}
-                {displayedDebts.length > 0 && displayedDebts.length === filteredDebts.length && (
+                {debts.length > 0 && debts.length === debts.length && (
                   <div className="py-6 text-center border-t border-gray-200">
                     <div className="text-gray-500 text-sm">
-                      Barcha {filteredDebts.length} ta qarz ko'rsatilmoqda
+                      Barcha {debts.length} ta qarz ko'rsatilmoqda
                     </div>
                   </div>
                 )}

@@ -50,7 +50,7 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-gradient-to-r from-teal-600 to-teal-500 border-b border-teal-700 shadow-lg">
+      <nav className="sticky top-0 z-50 bg-teal-600 border-b border-teal-700 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-4 lg:px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -113,7 +113,7 @@ export default function Navigation() {
                       p-2 rounded-lg transition-all duration-200
                       ${isActive
                         ? 'bg-white text-teal-600'
-                        : 'bg-teal-700 group-hover:bg-teal-600 text-teal-100 group-hover:text-white'
+                        : 'bg-teal-700 group-hover:bg-teal-800 text-teal-100 group-hover:text-white'
                       }
                     `}>
                       <Icon size={18} />

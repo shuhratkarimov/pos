@@ -1,17 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Navigation from '@/components/Navigation'
-import { getInvoices, Invoice } from '@/lib/api'
-import { FileText, Download, Eye, Calendar, Filter, Printer, Search, DollarSign, Package, Users, TrendingUp, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { getInvoices, getInvoiceStats, Invoice } from '@/lib/api'
+import { FileText, Download, Eye, Calendar, Printer, Search, DollarSign, Package, TrendingUp, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const ITEMS_PER_PAGE = 20
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([])
-  const [displayedInvoices, setDisplayedInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
@@ -20,40 +18,102 @@ export default function InvoicesPage() {
   const [expandedInvoices, setExpandedInvoices] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'items'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [totalInvoices, setTotalInvoices] = useState(0)
   const observerTarget = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    loadInvoices()
+  const [invoiceStats, setInvoiceStats] = useState({
+    totalInvoices: 0,
+    totalValue: 0,
+    totalItems: 0,
+    average: 0,
+  })
+
+  // Statistika yuklash
+  const loadInvoiceStats = useCallback(async () => {
+    try {
+      const response = await getInvoiceStats()
+      setInvoiceStats(response)
+    } catch {
+      toast.error('Statistikani yuklashda xatolik')
+    }
   }, [])
 
-  useEffect(() => {
-    filterAndSortInvoices()
-    setCurrentPage(1) // Filter o'zgarganda 1-sahifaga qaytish
-  }, [invoices, searchTerm, dateFilter, sortBy, sortOrder])
+  const loadInvoices = useCallback(async (isLoadMore = false) => {
+    if (isLoadMore && (!hasMore || loadingMore)) return
 
-  useEffect(() => {
-    // Scrollga qarab yangi cheklarni ko'rsatish
-    const startIndex = 0
-    const endIndex = currentPage * ITEMS_PER_PAGE
-    setDisplayedInvoices(filteredInvoices.slice(0, endIndex))
-  }, [filteredInvoices, currentPage])
+    if (!isLoadMore) {
+      setLoading(true)
+      setInvoices([])
+      setPage(1)
+      setHasMore(true)
+    } else {
+      setLoadingMore(true)
+    }
 
-  // Infinite scroll observer
+    try {
+      const currentPage = isLoadMore ? page + 1 : 1
+
+      const response = await getInvoices({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        search: searchTerm || undefined,
+        dateFilter: dateFilter === 'all' ? undefined : dateFilter,
+        sortBy,
+        sortOrder,
+      })
+
+      const newInvoices = response.invoices || []
+
+      setInvoices(prev => {
+        const merged = [...prev, ...newInvoices]
+
+        const unique = Array.from(
+          new Map(merged.map(item => [item._id, item])).values()
+        )
+
+        return unique
+      })
+      setTotalInvoices(response.total || 0)
+      setHasMore(response.hasMore ?? (newInvoices.length === ITEMS_PER_PAGE))
+      if (isLoadMore) setPage(currentPage)
+
+      // Toast faqat birinchi yuklashda chiqsin
+      if (!isLoadMore && !searchTerm) {
+        toast.success('Cheklar yuklandi')
+      } else if (newInvoices.length > 0) {
+        // ixtiyoriy: yangi cheklar yuklanganda kichik bildirishnoma
+        // toast.success(`${newInvoices.length} ta yangi chek qo‘shildi`, { duration: 2000 })
+      }
+
+    } catch (err) {
+      console.error(err)
+      toast.error('Cheklarni yuklashda xatolik')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [searchTerm, dateFilter, sortBy, sortOrder, page, hasMore, loadingMore])
+
+  // Birinchi yuklash va filtr o‘zgarganda
+  useEffect(() => {
+    loadInvoices(false)
+  }, [searchTerm, dateFilter, sortBy, sortOrder])
+
+  // Statistika bir marta yuklanadi
+  useEffect(() => {
+    loadInvoiceStats()
+  }, [loadInvoiceStats])
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting &&
-          !loadingMore &&
-          displayedInvoices.length < filteredInvoices.length) {
-          setLoadingMore(true)
-          setTimeout(() => {
-            setCurrentPage(prev => prev + 1)
-            setLoadingMore(false)
-          }, 300)
+        if (entries[0].isIntersecting && !loading && !loadingMore && hasMore) {
+          loadInvoices(true)
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.1 }
     )
 
     if (observerTarget.current) {
@@ -65,90 +125,8 @@ export default function InvoicesPage() {
         observer.unobserve(observerTarget.current)
       }
     }
-  }, [loadingMore, displayedInvoices.length, filteredInvoices.length])
+  }, [loading, loadingMore, hasMore])
 
-  const loadInvoices = async () => {
-    try {
-      setLoading(true)
-      const data = await getInvoices()
-      setInvoices(data)
-      toast.success('Cheklar yuklandi')
-    } catch (error) {
-      toast.error('Cheklarni yuklashda xatolik')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filterAndSortInvoices = () => {
-    let filtered = [...invoices]
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(invoice =>
-        invoice._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.items.some(item =>
-          item.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
-    }
-
-    // Date filter
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    const lastWeek = new Date(today)
-    lastWeek.setDate(lastWeek.getDate() - 7)
-    const lastMonth = new Date(today)
-    lastMonth.setMonth(lastMonth.getMonth() - 1)
-
-    if (dateFilter !== 'all') {
-      filtered = filtered.filter(invoice => {
-        const invoiceDate = new Date(invoice.date)
-
-        switch (dateFilter) {
-          case 'today':
-            return invoiceDate >= today
-          case 'yesterday':
-            return invoiceDate >= yesterday && invoiceDate < today
-          case 'week':
-            return invoiceDate >= lastWeek
-          case 'month':
-            return invoiceDate >= lastMonth
-          default:
-            return true
-        }
-      })
-    }
-
-    // Sorting
-    filtered.sort((a, b) => {
-      let aValue, bValue
-
-      switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.date).getTime()
-          bValue = new Date(b.date).getTime()
-          break
-        case 'amount':
-          aValue = a.total
-          bValue = b.total
-          break
-        case 'items':
-          aValue = a.items.length
-          bValue = b.items.length
-          break
-        default:
-          aValue = new Date(a.date).getTime()
-          bValue = new Date(b.date).getTime()
-      }
-
-      return sortOrder === 'desc' ? bValue - aValue : aValue - bValue
-    })
-
-    setFilteredInvoices(filtered)
-  }
 
   const downloadInvoice = (invoice: Invoice) => {
     const content = `
@@ -323,26 +301,6 @@ ${invoice.items.map((item, idx) =>
     )
   }
 
-  const getStats = () => {
-    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.total, 0)
-    const totalItems = filteredInvoices.reduce((sum, inv) =>
-      sum + inv.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
-    )
-    const uniqueProducts = new Set(
-      filteredInvoices.flatMap(inv => inv.items.map(item => item.name))
-    ).size
-
-    return {
-      totalAmount,
-      totalItems,
-      uniqueProducts,
-      count: filteredInvoices.length,
-      average: filteredInvoices.length > 0 ? totalAmount / filteredInvoices.length : 0
-    }
-  }
-
-  const stats = getStats()
-
   const SortButton = ({ type, label }: { type: typeof sortBy, label: string }) => (
     <button
       onClick={() => {
@@ -388,124 +346,170 @@ ${invoice.items.map((item, idx) =>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm mb-1">Jami cheklar</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.count}</p>
-              <p className="text-gray-500 text-xs">ta</p>
-            </div>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <FileText className="text-purple-600" size={20} />
-            </div>
-          </div>
-        </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Jami summa</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalAmount.toLocaleString()}</p>
-                <p className="text-gray-500 text-xs">so'm</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Jami cheklar */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col h-full">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-gray-600 text-sm font-medium">Jami cheklar</p>
+                <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                  <FileText className="text-purple-600" size={18} />
+                </div>
               </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <DollarSign className="text-green-600" size={20} />
+              <div className="mt-auto">
+                <p className="text-2xl font-bold text-gray-900 truncate">{invoiceStats.totalInvoices}</p>
+                <p className="text-gray-500 text-xs mt-1">ta chek</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Sotilgan mahsulot</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalItems}</p>
-                <p className="text-gray-500 text-xs">ta</p>
+          {/* Jami summa */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col h-full">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-gray-600 text-sm font-medium">Jami summa</p>
+                <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                  <DollarSign className="text-green-600" size={18} />
+                </div>
               </div>
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="text-blue-600" size={20} />
+              <div className="mt-auto">
+                <p className="text-2xl font-bold text-gray-900 truncate">{invoiceStats.totalValue.toLocaleString()}</p>
+                <p className="text-gray-500 text-xs mt-1">so'm</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">O'rtacha chek</p>
-                <p className="text-2xl font-bold text-gray-900">{Math.round(stats.average).toLocaleString()}</p>
-                <p className="text-gray-500 text-xs">so'm</p>
+          {/* Sotilgan mahsulot */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col h-full">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-gray-600 text-sm font-medium">Sotilgan mahsulot</p>
+                <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                  <Package className="text-blue-600" size={18} />
+                </div>
               </div>
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <TrendingUp className="text-amber-600" size={20} />
+              <div className="mt-auto">
+                <p className="text-2xl font-bold text-gray-900 truncate">
+                  {invoiceStats?.totalItems?.toFixed(1)}
+                </p>
+                <p className="text-gray-500 text-xs mt-1">dona</p>
+              </div>
+            </div>
+          </div>
+
+          {/* O'rtacha chek */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col h-full">
+              <div className="flex items-start justify-between mb-2">
+                <p className="text-gray-600 text-sm font-medium">O'rtacha chek</p>
+                <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+                  <TrendingUp className="text-amber-600" size={18} />
+                </div>
+              </div>
+              <div className="mt-auto">
+                <p className="text-2xl font-bold text-gray-900 truncate">
+                  {Math.round(invoiceStats.average).toLocaleString()}
+                </p>
+                <p className="text-gray-500 text-xs mt-1">so'm</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4 flex-wrap">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
             {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Chek ID yoki mahsulot nomi bo'yicha qidirish..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-              />
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-600 mb-2">
+                Qidiruv
+              </label>
+              <div className="relative">
+                <Search
+                  size={20}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Chek ID yoki mahsulot nomi..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl 
+                     text-gray-900 placeholder-gray-400 
+                     focus:outline-none focus:border-blue-500 
+                     focus:ring-2 focus:ring-blue-100 transition"
+                />
+              </div>
             </div>
 
-            {/* Date Filter */}
-            <div className="flex gap-3">
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-              >
-                <option value="all">Barcha vaqt</option>
-                <option value="today">Bugun</option>
-                <option value="yesterday">Kecha</option>
-                <option value="week">So'nggi hafta</option>
-                <option value="month">So'nggi oy</option>
-              </select>
+            {/* Date + Clear */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">
+                Sana filtri
+              </label>
+              <div className="flex gap-3">
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 
+                     rounded-xl text-gray-700 
+                     focus:outline-none focus:border-blue-500 
+                     focus:ring-2 focus:ring-blue-100 transition"
+                >
+                  <option value="all">Barcha vaqt</option>
+                  <option value="today">Bugun</option>
+                  <option value="yesterday">Kecha</option>
+                  <option value="week">So'nggi hafta</option>
+                  <option value="month">So'nggi oy</option>
+                </select>
 
-              <button
-                onClick={() => {
-                  setSearchTerm('')
-                  setDateFilter('all')
-                }}
-                className="flex-1 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-xl text-gray-700 hover:text-gray-900 transition-all flex items-center gap-2"
-              >
-                <X size={18} />
-                Tozalash
-              </button>
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    setDateFilter('all')
+                  }}
+                  className="px-4 py-3 bg-white border border-gray-300 
+                     rounded-xl text-gray-700 
+                     hover:bg-gray-50 hover:border-gray-400 
+                     transition"
+                >
+                  Tozalash
+                </button>
+              </div>
             </div>
           </div>
 
+          {/* Divider */}
+          <div className="my-6 border-t border-gray-100" />
+
           {/* Sort Options */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <p className="text-gray-600 text-sm mr-4">Saralash:</p>
-            <SortButton type="date" label="Sana bo'yicha" />
-            <SortButton type="amount" label="Summa bo'yicha" />
-            <SortButton type="items" label="Mahsulotlar bo'yicha" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm font-medium text-gray-600">
+              Saralash
+            </p>
+
+            <div className="flex rounded-xl p-1 gap-2 w-fit">
+              <SortButton type="date" label="Sana" />
+              <SortButton type="amount" label="Summa" />
+              <SortButton type="items" label="Mahsulotlar" />
+            </div>
           </div>
         </div>
 
-        {/* Invoices List */}
         <div className="space-y-4">
-          {loading ? (
+          {loading && invoices.length === 0 ? (
             <div className="text-center py-16">
-              <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
+              <Loader2 className="inline-block animate-spin h-10 w-10 text-teal-600" />
               <p className="mt-4 text-gray-400">Cheklar yuklanmoqda...</p>
             </div>
-          ) : displayedInvoices.length === 0 ? (
+          ) : invoices.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-2xl p-16 text-center shadow-sm">
               <FileText className="mx-auto text-gray-300 mb-6" size={64} />
               <h3 className="text-2xl font-bold text-gray-400 mb-2">Cheklar topilmadi</h3>
               <p className="text-gray-500 mb-6">
                 {searchTerm || dateFilter !== 'all'
-                  ? 'Qidiruv natijalari bo\'sh'
+                  ? 'Qidiruv natijalari bo‘sh'
                   : 'Hozircha hech qanday chek mavjud emas'}
               </p>
               {(searchTerm || dateFilter !== 'all') && (
@@ -523,174 +527,154 @@ ${invoice.items.map((item, idx) =>
           ) : (
             <>
               <div className="text-sm text-gray-600 mb-4">
-                {displayedInvoices.length} / {filteredInvoices.length} ta chek • Jami: {stats.totalAmount.toLocaleString()} so'm
+                {invoices.length} / {totalInvoices} ta chek ko‘rsatilmoqda
               </div>
 
-              {displayedInvoices.map((invoice) => (
-                <div
-                  key={invoice._id}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all duration-300"
-                >
-                  {/* Invoice Header */}
+              {Array.isArray(invoices) &&
+                invoices.map((invoice) => (
                   <div
-                    className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => toggleExpandInvoice(invoice._id)}
+                    key={invoice._id}
+                    className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all duration-200"
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 flex-wrap">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-3">
-                          <div className="p-2 bg-purple-100 rounded-lg">
-                            <FileText className="text-purple-600" size={20} />
+                    {/* Invoice Header - Compact */}
+                    <div
+                      className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleExpandInvoice(invoice._id)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        {/* Left side - Basic info */}
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 bg-purple-100 rounded-lg flex-shrink-0">
+                            <FileText className="text-purple-600" size={16} />
                           </div>
-                          <div>
-                            <h3 className="text-gray-900 font-bold truncate text-lg">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-gray-900 font-semibold text-base truncate">
                               Chek #{invoice._id.slice(-8).toUpperCase()}
                             </h3>
-                            <div className="flex items-center gap-3 mt-2">
-                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm border border-green-200">
-                                <Calendar size={12} />
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs border border-green-200">
+                                <Calendar size={10} />
                                 {new Date(invoice.date).toLocaleDateString('ru-RU')}
                               </span>
-                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm border border-blue-200">
-                                <Package size={12} />
-                                {invoice.items.length} ta mahsulot
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs border border-blue-200">
+                                <Package size={10} />
+                                {invoice.items.length} ta
                               </span>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-col items-end gap-1 md:gap-2 text-right min-w-[100px]">
-                        <p className="text-gray-600 text-sm md:text-base">Jami summa</p>
-                        <p className="text-2xl md:text-3xl font-bold text-green-600 truncate">
-                          {invoice.total.toLocaleString()}
-                        </p>
-                        <p className="text-gray-500 text-sm md:text-base">so'm</p>
-                      </div>
+                        {/* Right side - Amount & Actions */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right mr-1">
+                            <p className="text-xs text-gray-500">summa</p>
+                            <p className="text-sm font-bold text-green-600 truncate max-w-[100px]">
+                              {invoice.total.toLocaleString()}
+                            </p>
+                          </div>
 
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedInvoice(invoice)
-                          }}
-                          className="p-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl transition-colors border border-blue-200"
-                          title="Batafsil ko'rish"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            printInvoice(invoice)
-                          }}
-                          className="p-3 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-xl transition-colors border border-amber-200"
-                          title="Chop etish"
-                        >
-                          <Printer size={18} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            downloadInvoice(invoice)
-                          }}
-                          className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors border border-gray-300"
-                          title="Yuklab olish"
-                        >
-                          <Download size={18} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            toggleExpandInvoice(invoice._id)
-                          }}
-                          className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors border border-gray-300"
-                        >
-                          {expandedInvoices.includes(invoice._id) ?
-                            <ChevronUp size={18} /> : <ChevronDown size={18} />
-                          }
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Content */}
-                  {expandedInvoices.includes(invoice._id) && (
-                    <div className="border-t border-gray-200 bg-gray-50 p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-x-auto">
-                        <div>
-                          <h4 className="text-gray-900 font-semibold mb-3">Mahsulotlar</h4>
-                          <div className="space-y-2">
-                            {invoice.items.map((item, idx) => (
-                              <div
-                                key={idx}
-                                className="flex flex-col md:flex-row gap-6 justify-between items-center p-3 bg-white rounded-lg border border-gray-200"
-                              >
-                                <div>
-                                  <p className="text-gray-900 font-medium">{item.name}</p>
-                                  <p className="text-gray-600 text-sm">
-                                    {item.quantity} {item.measure} × {item.price.toLocaleString()} so'm
-                                  </p>
-                                </div>
-                                <p className="text-green-600 font-semibold">
-                                  {item.subtotal.toLocaleString()} so'm
-                                </p>
-                              </div>
-                            ))}
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedInvoice(invoice)
+                              }}
+                              className="p-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors border border-blue-200"
+                              title="Batafsil"
+                            >
+                              <Eye size={14} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleExpandInvoice(invoice._id)
+                              }}
+                              className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors border border-gray-200"
+                            >
+                              {expandedInvoices.includes(invoice._id) ?
+                                <ChevronUp size={14} /> : <ChevronDown size={14} />
+                              }
+                            </button>
                           </div>
                         </div>
+                      </div>
+                    </div>
 
-                        <div>
-                          <h4 className="text-gray-900 font-semibold mb-3">To'lov ma'lumotlari</h4>
-                          <div className="space-y-4">
-                            <div className="bg-white p-4 rounded-lg border border-gray-200">
-                              <p className="text-gray-600 text-sm mb-1">To'lov usuli</p>
-                              <p className="text-gray-900 font-semibold capitalize">
-                                {invoice.paymentMethod}
-                              </p>
+                    {/* Expanded Content - Compact */}
+                    {expandedInvoices.includes(invoice._id) && (
+                      <div className="border-t border-gray-200 bg-gray-50 p-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {/* Products list */}
+                          <div>
+                            <h4 className="text-gray-900 font-medium text-sm mb-2">Mahsulotlar</h4>
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                              {invoice.items.map((item, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200 text-sm"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-gray-900 font-medium truncate">{item.name}</p>
+                                    <p className="text-gray-500 text-xs">
+                                      {item.quantity} {item.measure} × {item.price.toLocaleString()}
+                                    </p>
+                                  </div>
+                                  <p className="text-green-600 font-medium text-xs ml-2 whitespace-nowrap">
+                                    {item.subtotal.toLocaleString()} so'm
+                                  </p>
+                                </div>
+                              ))}
                             </div>
+                          </div>
 
-                            <div className="space-y-2">
-                              <div className="flex flex-col md:flex-row gap-6 justify-between">
-                                <span className="text-gray-600">Subtotal:</span>
-                                <span className="text-gray-900">
-                                  {invoice.subtotal.toLocaleString()} so'm
+                          {/* Payment info */}
+                          <div>
+                            <h4 className="text-gray-900 font-medium text-sm mb-2">To'lov</h4>
+                            <div className="bg-white p-3 rounded-lg border border-gray-200 space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Usul:</span>
+                                <span className="text-gray-900 font-medium capitalize">
+                                  {invoice.paymentMethod}
                                 </span>
                               </div>
-                              <div className="flex flex-col md:flex-row gap-6 justify-between border-t border-gray-300 pt-2">
-                                <span className="text-gray-900 font-bold truncate">Jami:</span>
-                                <span className="text-green-600 font-bold text-lg truncate">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Subtotal:</span>
+                                <span className="text-gray-900">{invoice.subtotal.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm border-t border-gray-200 pt-2">
+                                <span className="text-gray-800 font-medium">Jami:</span>
+                                <span className="text-green-600 font-bold">
                                   {invoice.total.toLocaleString()} so'm
                                 </span>
                               </div>
-                            </div>
 
-                            <div className="flex gap-2 pt-4">
-                              <button
-                                onClick={() => printInvoice(invoice)}
-                                className="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-700 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors border border-amber-200"
-                              >
-                                <Printer size={16} />
-                                Chop etish
-                              </button>
-                              <button
-                                onClick={() => downloadInvoice(invoice)}
-                                className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors border border-blue-200"
-                              >
-                                <Download size={16} />
-                                Yuklab olish
-                              </button>
+                              {/* Action buttons */}
+                              <div className="flex gap-2 pt-2">
+                                <button
+                                  onClick={() => printInvoice(invoice)}
+                                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-1.5 rounded-lg flex items-center justify-center gap-1 text-xs transition-colors border border-teal-200"
+                                >
+                                  <Printer size={12} />
+                                  Chop etish
+                                </button>
+                                <button
+                                  onClick={() => downloadInvoice(invoice)}
+                                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-1.5 rounded-lg flex items-center justify-center gap-1 text-xs transition-colors border border-teal-200"
+                                >
+                                  <Download size={12} />
+                                  Yuklab olish
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                ))}
 
-              {/* Loading More Indicator */}
-              {displayedInvoices.length > 0 && displayedInvoices.length < filteredInvoices.length && (
+              {/* Loading More */}
+              {hasMore && (
                 <div ref={observerTarget} className="py-6 text-center">
                   {loadingMore ? (
                     <div className="flex items-center justify-center gap-2 text-gray-600">
@@ -699,17 +683,16 @@ ${invoice.items.map((item, idx) =>
                     </div>
                   ) : (
                     <div className="text-gray-500 text-sm">
-                      Pastga tushing yoki kuting...
+                      Pastga tushing...
                     </div>
                   )}
                 </div>
               )}
 
-              {/* End of List */}
-              {displayedInvoices.length > 0 && displayedInvoices.length === filteredInvoices.length && (
+              {!hasMore && invoices.length > 0 && (
                 <div className="py-6 text-center border-t border-gray-200">
                   <div className="text-gray-500 text-sm">
-                    📋 Barcha {filteredInvoices.length} ta chek ko'rsatilmoqda
+                    Barcha {totalInvoices} ta chek ko‘rsatildi
                   </div>
                 </div>
               )}
@@ -718,115 +701,121 @@ ${invoice.items.map((item, idx) =>
         </div>
       </main>
 
-      {/* Invoice Detail Modal */}
+      {/* Invoice Detail Modal - Compact & Beautiful */}
       {selectedInvoice && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl sm:max-w-full w-full max-h-[90vh] overflow-y-auto ...">
-            <div className="sticky top-0 bg-white border-b border-gray-300 px-6 py-4 flex justify-between items-center shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <FileText className="text-purple-600" size={20} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
+
+            {/* Modal Header - Sticky */}
+            <div className="sticky top-0 bg-gradient-to-r from-teal-600 to-teal-500 px-5 py-3 flex items-center justify-between text-white">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-white/20 rounded-lg">
+                  <FileText size={18} className="text-white" />
                 </div>
-                <h2 className="text-gray-900 text-xl font-bold">
-                  Chek #{selectedInvoice._id.slice(-8).toUpperCase()}
-                </h2>
+                <div>
+                  <h2 className="font-bold text-base">Chek #{selectedInvoice._id.slice(-8).toUpperCase()}</h2>
+                  <p className="text-xs text-teal-100">{new Date(selectedInvoice.date).toLocaleDateString('uz-UZ')}</p>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedInvoice(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
               >
-                <X className="text-gray-500" size={24} />
+                <X size={18} />
               </button>
             </div>
 
-            <div className="p-6 space-y-8">
-              {/* Invoice Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <p className="text-gray-600 text-sm mb-1">Sana va vaqt</p>
-                  <p className="text-gray-900 font-semibold">
-                    {new Date(selectedInvoice.date).toLocaleString('ru-RU')}
-                  </p>
+            {/* Modal Body - Scrollable */}
+            <div className="p-5 overflow-y-auto max-h-[calc(90vh-120px)] space-y-4">
+
+              {/* Quick Stats Cards */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-teal-50 p-3 rounded-xl border border-teal-200">
+                  <p className="text-teal-600 text-xs mb-0.5">To'lov usuli</p>
+                  <p className="font-bold text-gray-800 capitalize text-sm">{selectedInvoice.paymentMethod}</p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <p className="text-gray-600 text-sm mb-1">Mahsulotlar soni</p>
-                  <p className="text-gray-900 font-semibold">{selectedInvoice.items.length} ta</p>
+                <div className="bg-teal-50 p-3 rounded-xl border border-teal-200">
+                  <p className="text-teal-600 text-xs mb-0.5">Mahsulotlar</p>
+                  <p className="font-bold text-gray-800 text-sm">{selectedInvoice.items.length} ta</p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                  <p className="text-gray-600 text-sm mb-1">To'lov usuli</p>
-                  <p className="text-gray-900 font-semibold capitalize">{selectedInvoice.paymentMethod}</p>
+                <div className="bg-teal-50 p-3 rounded-xl border border-teal-200">
+                  <p className="text-teal-600 text-xs mb-0.5">Jami summa</p>
+                  <p className="font-bold text-teal-600 text-sm">{selectedInvoice.total.toLocaleString()} so'm</p>
                 </div>
               </div>
 
-              {/* Items Table */}
-              <div className="border border-gray-300 rounded-xl overflow-hidden">
-                <div className="bg-gray-50 p-4 border-b border-gray-300">
-                  <h3 className="text-gray-900 font-bold text-lg">Mahsulotlar ro'yxati</h3>
+              {/* Products List - Compact */}
+              <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-700 text-sm flex items-center gap-2">
+                    <Package size={14} className="text-teal-600" />
+                    Mahsulotlar
+                  </h3>
                 </div>
-                <div className="divide-y divide-gray-300">
+                <div className="divide-y divide-gray-200 max-h-48 overflow-y-auto">
                   {selectedInvoice.items.map((item, idx) => (
-                    <div key={idx} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1">
-                          <p className="text-gray-900 font-medium">{item.name}</p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <span className="text-gray-600 text-sm">
-                              Miqdori: {item.quantity} {item.measure}
+                    <div key={idx} className="px-4 py-2.5 hover:bg-white transition-colors">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-800 text-sm truncate">{item.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-500">
+                              {item.quantity} {item.measure}
                             </span>
-                            <span className="text-gray-600 text-sm">
-                              Narxi: {item.price.toLocaleString()} so'm
-                            </span>
+                            <span className="text-xs text-gray-400">×</span>
+                            <span className="text-xs text-gray-600">{item.price.toLocaleString()}</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-green-600 font-semibold text-lg">
+                          <span className="text-sm font-semibold text-teal-600 whitespace-nowrap">
                             {item.subtotal.toLocaleString()}
-                          </p>
-                          <p className="text-gray-500 text-sm">so'm</p>
+                          </span>
+                          <span className="text-xs text-gray-500 ml-0.5">so'm</span>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Total Section */}
-              <div className="bg-gray-50 border border-gray-300 rounded-xl p-6">
-                <div className="flex justify-between items-center border-t border-gray-400 pt-4">
-                  <span className="text-gray-900 text-2xl font-bold">Jami:</span>
-                  <span className="text-green-600 text-3xl font-bold">
-                    {selectedInvoice.total.toLocaleString()} so'm
-                  </span>
+                {/* Total inside products section */}
+                <div className="bg-teal-50 px-4 py-2.5 border-t border-teal-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-gray-700 text-sm">Umumiy:</span>
+                    <span className="font-bold text-teal-600 text-base">
+                      {selectedInvoice.total.toLocaleString()} so'm
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button
-                  onClick={() => printInvoice(selectedInvoice)}
-                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow hover:shadow-md"
-                >
-                  <Printer size={20} />
-                  Chop etish
-                </button>
-                <button
-                  onClick={() => downloadInvoice(selectedInvoice)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow hover:shadow-md"
-                >
-                  <Download size={20} />
-                  Yuklab olish
-                </button>
-                <button
-                  onClick={() => setSelectedInvoice(null)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-4 px-6 rounded-xl font-bold transition-colors"
-                >
-                  Yopish
-                </button>
-              </div>
+            </div>
+
+            {/* Modal Footer - Action Buttons */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-5 py-3 flex gap-2">
+              <button
+                onClick={() => printInvoice(selectedInvoice)}
+                className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow"
+              >
+                <Printer size={16} />
+                Chop etish
+              </button>
+              <button
+                onClick={() => downloadInvoice(selectedInvoice)}
+                className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow"
+              >
+                <Download size={16} />
+                Yuklab olish
+              </button>
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-colors border border-gray-200"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </div >
   )
 }

@@ -2,6 +2,8 @@
 
 import { useRef, useEffect } from 'react'
 import JsBarcode from 'jsbarcode'
+import { Courier_Prime } from 'next/font/google'
+const courierPrime = Courier_Prime({ subsets: ['latin'], weight: ['400', '700'] })
 
 type Product = {
   _id: string
@@ -33,11 +35,13 @@ export default function BarcodeSheet({ products, size = 'small' }: BarcodeSheetP
         JsBarcode(svg, p.code, {
           format: 'CODE128',
           width: 2.2,
-          height: heightPx - 55,
+          height: heightPx * 0.7,
           displayValue: true,
+          textAlign: 'center',
+          textPosition: 'bottom',
           fontSize: 15,
           margin: 8,
-          textMargin: 3,
+          textMargin: 4,
         })
       }
     })
@@ -57,10 +61,18 @@ export default function BarcodeSheet({ products, size = 'small' }: BarcodeSheetP
                 if (el) svgRefs.current[i] = el
               }}
               className="w-full"
-              style={{ height: heightPx - 42 }}
+              style={{ height: heightPx * 0.6 }}
             />
-            <div className="text-center text-[11px] font-medium text-gray-800 mt-2 px-2 line-clamp-2">
-              {p.name}
+            <div className="text-center text-[11px] font-medium text-gray-800 px-2 line-clamp-2">
+              <div
+                style={{
+                  fontFamily: 'Roboto Mono, monospace',
+                  fontWeight: 400,
+                  fontStyle: 'normal',
+                }}
+              >
+                {p.name}
+              </div>
             </div>
           </div>
         ))}

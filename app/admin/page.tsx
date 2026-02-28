@@ -460,11 +460,11 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <div className="bg-indigo-600 p-2 rounded-lg">
+              <div className="bg-teal-600 p-2 rounded-lg">
                 <Settings className="h-6 w-6 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
-              <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+              <span className="bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                 Super Admin
               </span>
             </div>
@@ -482,7 +482,7 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-8">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-indigo-600 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-teal-600 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Provayder balansi</p>
@@ -490,8 +490,8 @@ export default function AdminPage() {
                   {Number(totalProviderBalance?.response?.data?.balance || 0).toLocaleString()} so'm
                 </p>
               </div>
-              <div className="bg-indigo-100 p-3 rounded-lg">
-                <Wallet className="h-6 w-6 text-indigo-600" />
+              <div className="bg-teal-100 p-3 rounded-lg">
+                <Wallet className="h-6 w-6 text-teal-600" />
               </div>
             </div>
           </div>
@@ -573,7 +573,7 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('shops')}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors relative ${activeTab === 'shops'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  ? 'text-teal-600 border-b-2 border-teal-600'
                   : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
@@ -588,7 +588,7 @@ export default function AdminPage() {
               <button
                 onClick={() => setActiveTab('users')}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors relative ${activeTab === 'users'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  ? 'text-teal-600 border-b-2 border-teal-600'
                   : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
@@ -612,12 +612,12 @@ export default function AdminPage() {
             placeholder="Qidirish..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
           <button
             onClick={() => activeTab === 'shops' ? setShopModalOpen(true) : setUserModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm"
           >
             <Plus className="h-5 w-5" />
             <span>Yangi {activeTab === 'shops' ? 'do\'kon' : 'foydalanuvchi'}</span>
@@ -715,8 +715,8 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{idx + 1}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-indigo-600">
+                          <div className="h-8 w-8 bg-teal-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-teal-600">
                               {user.username.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -798,7 +798,7 @@ export default function AdminPage() {
                     placeholder="Do'kon nomini kiriting"
                     value={shopName}
                     onChange={e => setShopName(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
                 <div>
@@ -808,7 +808,7 @@ export default function AdminPage() {
                   <select
                     value={selectedOwnerId}
                     onChange={e => setSelectedOwnerId(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   >
                     <option value="">Egasi tanlang</option>
                     {users.map(u => (
@@ -827,7 +827,7 @@ export default function AdminPage() {
                 <button
                   onClick={handleSaveShop}
                   disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-400"
                 >
                   {loading ? 'Jarayon...' : editingShopId ? 'Saqlash' : 'Yaratish'}
                 </button>
@@ -860,7 +860,7 @@ export default function AdminPage() {
                     placeholder="Miqdorni kiriting"
                     value={topUpAmount}
                     onChange={e => setTopUpAmount(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -874,7 +874,7 @@ export default function AdminPage() {
                 <button
                   onClick={handleTopUpSubmit}
                   disabled={topUpLoading}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-400"
                 >
                   {topUpLoading ? 'Jarayon...' : 'To\'ldirish'}
                 </button>
@@ -908,7 +908,7 @@ export default function AdminPage() {
                     placeholder="Foydalanuvchi nomini kiriting"
                     value={editingUserId ? editingUserName : newUserName}
                     onChange={e => editingUserId ? setEditingUserName(e.target.value) : setNewUserName(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
                 {!editingUserId && (
@@ -921,7 +921,7 @@ export default function AdminPage() {
                       placeholder="Parolni kiriting"
                       value={newUserPassword}
                       onChange={e => setNewUserPassword(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                     />
                   </div>
                 )}
@@ -934,7 +934,7 @@ export default function AdminPage() {
                     placeholder="Telefon raqamni kiriting"
                     value={editingUserId ? editingUserPhone : newUserPhone}
                     onChange={e => editingUserId ? setEditingUserPhone(e.target.value) : setNewUserPhone(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
 
@@ -948,7 +948,7 @@ export default function AdminPage() {
                           placeholder="Yangi parol"
                           value={newPasswordInput}
                           onChange={e => setNewPasswordInput(e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                         />
                         <button
                           onClick={() => handleChangePassword(editingUserId)}
@@ -985,7 +985,7 @@ export default function AdminPage() {
                 <button
                   onClick={handleSaveUser}
                   disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-gray-400"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-400"
                 >
                   {loading ? 'Jarayon...' : editingUserId ? 'Saqlash' : 'Yaratish'}
                 </button>
@@ -1015,7 +1015,7 @@ export default function AdminPage() {
                     placeholder="Miqdorni kiriting"
                     value={deductAmount}
                     onChange={e => setDeductAmount(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -1053,8 +1053,8 @@ export default function AdminPage() {
               </div>
               <div className="p-6">
                 <div className="flex items-center mb-6">
-                  <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <span className="text-2xl font-medium text-indigo-600">
+                  <div className="h-16 w-16 bg-teal-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl font-medium text-teal-600">
                       {selectedUser.username.charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -1095,7 +1095,7 @@ export default function AdminPage() {
                     setDetailsModalOpen(false)
                     handleEditUser(selectedUser)
                   }}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                 >
                   Tahrirlash
                 </button>

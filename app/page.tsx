@@ -42,7 +42,24 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
   const [cartItems, setCartItems] = useState<CustomPriceItem[]>([])
   const [loading, setLoading] = useState(false)
-  const [topSelling, setTopSelling] = useState<TopProduct[]>([])
+  const [topSelling, setTopSelling] = useState<TopProduct>({
+    data: [{
+      productId: '',
+      name: '',
+      code: '',
+      price: 0,
+      measure: '',
+      stock: 0,
+      soldQuantity: 0,
+      totalRevenue: 0,
+    }],
+    period: {
+      startDate: '',
+      endDate: '',
+    },
+    success: false,
+    totalSales: 0,
+  })
   const [showKeypad, setShowKeypad] = useState(false)
   const [keypadProduct, setKeypadProduct] = useState<Product | null>(null)
   const [keypadValue, setKeypadValue] = useState('')
@@ -191,7 +208,7 @@ export default function Home() {
       )
       setFilteredProducts(filtered.slice(0, 30))
     } else {
-      const topProducts = topSelling.map(top => {
+      const topProducts = topSelling.data.map(top => {
         const product = products.find(p => p._id === top.productId)
         return product
       }).filter(Boolean) as Product[]
@@ -204,7 +221,7 @@ export default function Home() {
     setLoading(true)
     try {
       const productsData = await getProducts()
-      setProducts(productsData)
+      setProducts(productsData.products)
 
       const topSellingData = await getTopSellingProducts(15)
       setTopSelling(topSellingData)
@@ -690,7 +707,7 @@ export default function Home() {
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <Package className="text-blue-600" size={22} />
+                  <Package className="text-teal-600" size={22} />
                   <h2 className="text-lg font-bold text-gray-900">
                     {searchQuery ? 'Qidiruv natijalari' : 'Mahsulotlar'}
                   </h2>
@@ -749,8 +766,8 @@ export default function Home() {
                           }}
                           disabled={isOutOfStock}
                           className={`h-9 sm:h-10 w-9 sm:w-10 flex items-center justify-center rounded-lg ${isOutOfStock
-                              ? 'bg-green-500 text-white cursor-not-allowed'
-                              : 'bg-violet-400 hover:bg-violet-600 text-white'
+                            ? 'bg-green-500 text-white cursor-not-allowed'
+                            : 'bg-violet-400 hover:bg-violet-600 text-white'
                             }`}
                         >
                           <Scale size={18} />
@@ -760,8 +777,8 @@ export default function Home() {
                           onClick={() => handleCustomPrice(product)}
                           disabled={isOutOfStock}
                           className={`h-9 sm:h-10 w-9 sm:w-10 flex items-center justify-center rounded-lg ${isOutOfStock
-                              ? 'bg-orange-400 text-white cursor-not-allowed'
-                              : 'bg-orange-400 hover:bg-orange-600 text-white'
+                            ? 'bg-blue-400 text-white cursor-not-allowed'
+                            : 'bg-blue-500 hover:bg-blue-600 text-white'
                             }`}
                         >
                           <Euro size={18} />
@@ -771,8 +788,8 @@ export default function Home() {
                           onClick={() => handleAddToCart(product, 1)}
                           disabled={isOutOfStock}
                           className={`h-9 sm:h-10 w-9 sm:w-10 flex-1 rounded-lg text-sm font-semibold transition-all ${isOutOfStock
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-teal-500 hover:bg-teal-600 text-white shadow-sm hover:shadow'
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-teal-500 hover:bg-teal-600 text-white shadow-sm hover:shadow'
                             }`}
                         >
                           +1
@@ -802,32 +819,40 @@ export default function Home() {
           {/* Cart Section */}
           <div className="lg:col-span-1">
             <div className="sticky top-6">
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg">
-                <div className="bg-teal-600 p-4">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300">
+
+                {/* Header - Gradient bilan */}
+                <div className="bg-teal-600 p-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <ShoppingCart className="text-white" size={22} />
-                      <h2 className="text-xl font-bold text-white">Savatcha</h2>
+                      <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <ShoppingCart className="text-white" size={18} />
+                      </div>
+                      <div>
+                        <h2 className="text-base text-white">Savatcha ({cartStats.uniqueItems ? `${cartStats.uniqueItems} ta mahsulot` : `Bo'sh`})</h2>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm text-blue-100">
-                        {cartStats.uniqueItems ? `${cartStats.uniqueItems} ta mahsulot` : `Mahsulotlar yo'q`}
-                      </span>
-                      {cartStats.customItems > 0 && (
-                        <div className="text-xs text-purple-200 mt-1">
-                          {cartStats.customItems} ta maxsus
-                        </div>
-                      )}
-                    </div>
+
+                    {/* Stats Badge */}
+                    {cartStats.customItems > 0 && (
+                      <div className="px-3 py-1.5 bg-purple-500/20 backdrop-blur-sm rounded-lg border border-purple-300/30">
+                        <span className="text-xs font-medium text-purple-100">
+                          +{cartStats.customItems} maxsus
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="p-4 max-h-[450px] overflow-y-auto">
+                {/* Cart Items */}
+                <div className="p-4 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {cartItems.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <ShoppingCart className="mx-auto text-gray-300" size={40} />
-                      <p className="text-gray-400 mt-3">Savatcha bo'sh</p>
-                      <p className="text-gray-500 text-sm mt-1">
+                    <div className="py-12 text-center">
+                      <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <ShoppingCart className="text-gray-400" size={32} />
+                      </div>
+                      <p className="text-gray-500 font-medium">Savatcha bo'sh</p>
+                      <p className="text-gray-400 text-sm mt-1">
                         Mahsulot qo'shish uchun ro'yxatdan tanlang
                       </p>
                     </div>
@@ -840,145 +865,179 @@ export default function Home() {
                         return (
                           <div
                             key={item.id}
-                            className={`bg-gray-50 border rounded-lg p-3 ${item.isCustom ? 'border-purple-300' : 'border-gray-200'
+                            className={`group relative bg-white border rounded-xl p-4 transition-all hover:shadow-md ${item.isCustom
+                                ? 'border-purple-200 hover:border-purple-300'
+                                : 'border-gray-200 hover:border-teal-200'
                               }`}
                           >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-gray-900 font-medium text-sm">{item.name}</p>
-                                  {item.isCustom && (
-                                    <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-600 rounded">
-                                      Maxsus
-                                    </span>
-                                  )}
-                                </div>
+                            {/* Custom Badge */}
+                            {item.isCustom && (
+                              <div className="absolute -top-2 -right-2">
+                                <span className="px-2 py-1 bg-purple-500 text-white text-xs font-medium rounded-full shadow-lg">
+                                  Maxsus
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Item Header */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-gray-900 font-semibold text-base truncate pr-8">
+                                  {item.name}
+                                </p>
 
                                 {isEditing ? (
                                   <div className="mt-2">
                                     <div className="flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        value={editPriceValue}
-                                        onChange={(e) => {
-                                          const value = e.target.value.replace(/\D/g, '')
-                                          setEditPriceValue(value ? parseInt(value).toLocaleString('uz-UZ') : '')
-                                        }}
-                                        className="flex-1 px-3 py-1 bg-white border border-gray-300 rounded-lg text-gray-900 text-base"
-                                        placeholder="Narxni kiriting"
-                                        autoFocus
-                                      />
+                                      <div className="relative flex-1">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">so'm</span>
+                                        <input
+                                          type="text"
+                                          value={editPriceValue}
+                                          onChange={(e) => {
+                                            const value = e.target.value.replace(/\D/g, '')
+                                            setEditPriceValue(value ? parseInt(value).toLocaleString('uz-UZ') : '')
+                                          }}
+                                          className="w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all"
+                                          placeholder="0"
+                                          autoFocus
+                                        />
+                                      </div>
                                       <button
                                         onClick={() => handleUpdateCustomPrice(item.id)}
-                                        className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                                        className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
                                         title="Saqlash"
                                       >
-                                        <Save size={14} />
+                                        <Save size={16} />
                                       </button>
                                       <button
                                         onClick={() => {
                                           setEditingItemId(null)
                                           setEditPriceValue('')
                                         }}
-                                        className="p-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg"
+                                        className="p-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
                                         title="Bekor qilish"
                                       >
-                                        <X size={14} />
+                                        <X size={16} />
                                       </button>
                                     </div>
                                     {item.originalPrice && (
-                                      <p className="text-gray-500 text-xs mt-1">
-                                        Asl narx: {item.originalPrice.toLocaleString()} so'm
+                                      <p className="text-gray-400 text-xs mt-2">
+                                        <span className="line-through">{item.originalPrice.toLocaleString()} so'm</span>
+                                        <span className="ml-2 text-red-500">-{Math.round((1 - item.price / item.originalPrice) * 100)}%</span>
                                       </p>
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-blue-600 font-medium">
-                                      {item.price.toLocaleString()} so'm
+                                  <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-teal-600 font-bold text-lg">
+                                      {item.price.toLocaleString()}
                                     </span>
-                                    <span className="text-gray-400">x</span>
-                                    <span className="text-gray-700">{item.quantity}</span>
-                                    <span className="text-gray-500 text-l">{item.measure}</span>
+                                    <span className="text-gray-400">×</span>
+                                    <span className="text-gray-700 font-medium">{item.quantity}</span>
+                                    <span className="text-gray-500 text-sm">{item.measure}</span>
                                   </div>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <span
-                                  className="text-green-600 text-xl font-bold cursor-pointer hover:text-green-700 transition-colors"
-                                  onClick={() => {
-                                    // Endi farq qilmaydi — har qanday item uchun subtotal modalini ochamiz
-                                    setEditingCartItem(item)
-                                    setEditSubtotalInput(item.subtotal.toLocaleString('uz-UZ'))
-                                    setShowEditSubtotalModal(true)
-                                  }}
-                                >
+
+                              {/* Subtotal */}
+                              <div
+                                onClick={() => {
+                                  setEditingCartItem(item)
+                                  setEditSubtotalInput(item.subtotal.toLocaleString('uz-UZ'))
+                                  setShowEditSubtotalModal(true)
+                                }}
+                                className="text-right cursor-pointer group/subtotal"
+                              >
+                                <span className="text-green-600 text-xl font-bold group-hover/subtotal:text-green-700 transition-colors">
                                   {item.subtotal.toLocaleString()}
                                 </span>
-                                <span className="text-gray-800 text-xs"> so'm</span>
+                                <span className="text-gray-500 text-xs ml-1">so'm</span>
+                                <div className="opacity-0 group-hover/subtotal:opacity-100 transition-opacity">
+                                  <span className="text-xs text-blue-500">(o'zgartirish)</span>
+                                </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between mt-3">
-                              <div className="flex items-center gap-3">
-                                <button
-                                  onClick={() => handleUpdateQuantity(
-                                    item.id,
-                                    item.quantity - 1,
-                                    product?.stock
-                                  )}
-                                  className="w-10 h-10 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center transition-colors"
-                                >
-                                  <Minus size={18} />
-                                </button>
+                            {/* Actions */}
+                            <div className="flex items-center justify-between mt-4">
+                              <div className="flex items-center gap-2">
+                                {/* Quantity Controls */}
+                                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                                  <button
+                                    onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, product?.stock)}
+                                    className="w-8 h-8 hover:bg-white rounded-lg flex items-center justify-center transition-colors text-gray-600 hover:text-yellow-600"
+                                    disabled={item.quantity <= 1}
+                                  >
+                                    <Minus size={16} />
+                                  </button>
 
-                                {item.isCustom ? (
+                                  {item.isCustom ? (
+                                    <button
+                                      onClick={() => startEditPrice(item)}
+                                      className="w-8 h-8 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-lg flex items-center justify-center transition-colors mx-1"
+                                      title="Narxni tahrirlash"
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setKeypadProduct({
+                                          _id: item.id,
+                                          name: item.name,
+                                          code: '',
+                                          price: item.price,
+                                          stock: product?.stock || 0,
+                                          measure: item.measure,
+                                        })
+                                        setKeypadValue(item.quantity.toString())
+                                        setShowKeypad(true)
+                                      }}
+                                      className="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center font-mono transition-colors text-sm mx-1"
+                                    >
+                                      {item.quantity}
+                                    </button>
+                                  )}
+
                                   <button
-                                    onClick={() => startEditPrice(item)}
-                                    className="w-10 h-10 bg-purple-100 border border-purple-300 hover:bg-purple-200 text-purple-600 rounded-full flex items-center justify-center transition-colors"
-                                    title="Narxni tahrirlash"
+                                    onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, product?.stock)}
+                                    className="w-8 h-8 hover:bg-white rounded-lg flex items-center justify-center transition-colors text-gray-600 hover:text-yellow-600"
                                   >
-                                    <Edit2 size={18} />
+                                    <Plus size={16} />
                                   </button>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      setKeypadProduct({
-                                        _id: item.id,
-                                        name: item.name,
-                                        code: '',
-                                        price: item.price,
-                                        stock: product?.stock || 0,
-                                        measure: item.measure,
-                                      })
-                                      setKeypadValue(item.quantity.toString())
-                                      setShowKeypad(true)
-                                    }}
-                                    className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center font-mono transition-colors text-sm"
-                                  >
-                                    {item.quantity}
-                                  </button>
+                                </div>
+
+                                {/* Stock Warning */}
+                                {!item.isCustom && product && product.stock - item.quantity < 5 && (
+                                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-lg whitespace-nowrap">
+                                    {product.stock - item.quantity} qoldi
+                                  </span>
                                 )}
-
-                                <button
-                                  onClick={() => handleUpdateQuantity(
-                                    item.id,
-                                    item.quantity + 1,
-                                    product?.stock
-                                  )}
-                                  className="w-10 h-10 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center transition-colors"
-                                >
-                                  <Plus size={18} />
-                                </button>
                               </div>
 
+                              {/* Remove Button */}
                               <button
                                 onClick={() => setCartItems(prev => prev.filter(i => i.id !== item.id))}
-                                className="px-3 py-3 hover:cursor-pointer bg-red-500 hover:bg-red-600 text-white rounded-full text-sm transition-colors"
+                                className="p-2 text-red-500 hover:text-white hover:bg-red-500 rounded-lg transition-all"
+                                title="O'chirish"
                               >
                                 <Trash2 size={16} />
                               </button>
                             </div>
+
+                            {/* Progress Bar (optional) */}
+                            {!item.isCustom && product && (
+                              <div className="mt-3 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                                  style={{
+                                    width: `${Math.min(100, (item.quantity / product.stock) * 100)}%`,
+                                    backgroundColor: item.quantity > product.stock * 0.8 ? '#f59e0b' : '#14b8a6'
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
                         )
                       })}
@@ -986,23 +1045,35 @@ export default function Home() {
                   )}
                 </div>
 
+                {/* Footer - Total and Actions */}
                 {cartItems.length > 0 && (
-                  <div className="p-4 border-t border-gray-200 bg-gray-50">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-gray-600 font-medium">Jami summa:</span>
-                      <span className="text-2xl font-bold text-gray-900">
-                        {cartStats.totalAmount.toLocaleString()} so'm
-                      </span>
+                  <div className="border-t border-gray-200 bg-gradient-to-b from-gray-50 to-white p-5">
+                    {/* Total */}
+                    <div className="flex items-center justify-between mb-5">
+                      <div>
+                        <p className="text-gray-500 text-sm">Jami summa</p>
+                        <p className="text-gray-400 text-xs mt-0.5">
+                          {cartItems.reduce((acc, item) => acc + item.quantity, 0)} ta mahsulot
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-3xl font-bold text-gray-900">
+                          {cartStats.totalAmount.toLocaleString()}
+                        </span>
+                        <span className="text-gray-500 text-sm ml-1">so'm</span>
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-4 gap-2">
                       <button
                         onClick={handleCheckout}
-                        className="flex-1 hover:cursor-pointer bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow hover:shadow-md"
+                        className="col-span-2 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
                       >
                         <Receipt size={18} />
                         Sotish
                       </button>
+
                       <button
                         onClick={() => printReceipt({
                           date: new Date().toISOString(),
@@ -1018,30 +1089,38 @@ export default function Home() {
                           total: cartStats.totalAmount,
                           paymentMethod: 'naqd'
                         })}
-                        className="px-4 py-2.5 hover:cursor-pointer bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+                        className="bg-gray-700 hover:bg-gray-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+                        title="Chekni chop etish"
                       >
-                        <Printer size={16} />
+                        <Printer size={18} />
                       </button>
+
                       <button
                         onClick={() => setShowDebtModal(true)}
                         disabled={cartItems.length === 0}
                         className={`
-      px-5 py-2.5 rounded-lg font-bold flex hover:cursor-pointer items-center gap-2 transition-all shadow hover:shadow-md
-      ${cartItems.length === 0
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-amber-600 hover:bg-amber-700 text-white'}
-    `}
+                py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg
+                ${cartItems.length === 0
+                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }
+              `}
                       >
                         <NotebookPen size={18} />
-                        Qarz
                       </button>
                     </div>
 
+                    {/* Clear Cart */}
                     <button
-                      onClick={() => setCartItems([])}
-                      className="w-full hover:cursor-pointer flex items-center justify-center gap-2 mt-3 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-gray-700 border border-gray-300 rounded-lg text-sm transition-colors shadow-sm"
+                      onClick={() => {
+                        if (confirm('Savatchani tozalashni tasdiqlaysizmi?')) {
+                          setCartItems([])
+                        }
+                      }}
+                      className="w-full flex items-center justify-center gap-2 mt-3 px-3 py-2.5 bg-white hover:bg-red-50 text-gray-600 hover:text-red-600 border border-gray-200 hover:border-red-200 rounded-xl text-sm font-medium transition-all"
                     >
-                      Savatchani tozalash <Trash2 size={16} />
+                      <Trash2 size={16} />
+                      Savatchani tozalash
                     </button>
                   </div>
                 )}

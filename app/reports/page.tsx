@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Navigation from '@/components/Navigation'
-import { getReports, Invoice } from '@/lib/api'
+import { getReportInvoices, getReportSummary, getTopSellingProducts, Invoice, TopProduct } from '@/lib/api'
 import {
   BarChart3,
   Calendar,
@@ -40,16 +40,24 @@ import {
   Line
 } from 'recharts'
 
-type PeriodType = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'
+const COLORS = [
+  '#0D9488', // teal-600
+  '#0891B2', // cyan-600  
+  '#059669', // emerald-600
+  '#7C3AED', // violet-600
+  '#DB2777', // pink-600
+  '#DC2626', // red-600
+  '#D97706', // amber-600
+  '#65A30D', // lime-600
+  '#4F46E5', // indigo-600
+  '#9333EA'  // purple-600
+];
+
+type PeriodType = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | 'hourly'
 
 const ITEMS_PER_PAGE = 20
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState<{ totalSales: number; totalInvoices: number; invoices: Invoice[] }>({
-    totalSales: 0,
-    totalInvoices: 0,
-    invoices: [],
-  })
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [periodType, setPeriodType] = useState<PeriodType>('monthly')
@@ -59,8 +67,30 @@ export default function ReportsPage() {
   const [timeRange, setTimeRange] = useState<'7days' | '30days' | '90days' | 'custom'>('30days')
   const [expandedView, setExpandedView] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [displayedInvoices, setDisplayedInvoices] = useState<Invoice[]>([])
   const observerTarget = useRef<HTMLDivElement>(null)
+  const [summary, setSummary] = useState<any>(null);           // jami statistika + chart datalari
+  const [invoices, setInvoices] = useState<Invoice[]>([]);     // cheklar ro'yxati (pagination bilan)
+  const [totalInvoices, setTotalInvoices] = useState(0);       // umumiy cheklar soni (pagination uchun)
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [topProducts, setTopProducts] = useState<TopProduct>({
+    data: [{
+      productId: '',
+      name: '',
+      code: '',
+      price: 0,
+      measure: '',
+      stock: 0,
+      soldQuantity: 0,
+      totalRevenue: 0,
+    }],
+    period: {
+      startDate: '',
+      endDate: '',
+    },
+    success: false,
+    totalSales: 0,
+  });
 
   useEffect(() => {
     calculateDefaultDates()
@@ -72,27 +102,13 @@ export default function ReportsPage() {
   }, [startDate, endDate])
 
   useEffect(() => {
-    // Scrollga qarab yangi cheklarni ko'rsatish
-    const startIndex = 0
-    const endIndex = currentPage * ITEMS_PER_PAGE
-    setDisplayedInvoices(reports.invoices.slice(0, endIndex))
-  }, [reports.invoices, currentPage])
-
-  // Infinite scroll observer
-  useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting &&
-          !loadingMore &&
-          displayedInvoices.length < reports.invoices.length) {
-          setLoadingMore(true)
-          setTimeout(() => {
-            setCurrentPage(prev => prev + 1)
-            setLoadingMore(false)
-          }, 300)
+        if (entries[0].isIntersecting && !loadingMore && hasMore) {
+          loadMoreInvoices()
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.1 }
     )
 
     if (observerTarget.current) {
@@ -104,7 +120,7 @@ export default function ReportsPage() {
         observer.unobserve(observerTarget.current)
       }
     }
-  }, [loadingMore, displayedInvoices.length, reports.invoices.length])
+  }, [hasMore, loadingMore, startDate, endDate])   // muhim dependency'lar
 
   const calculateDefaultDates = () => {
     const today = new Date()
@@ -151,119 +167,139 @@ export default function ReportsPage() {
       return
     }
 
-    if (new Date(startDate) > new Date(endDate)) {
-      toast.error('Boshlanish sanasi tugatish sanasidan keyin bo\'lishi mumkin emas')
-      return
-    }
-
     setLoading(true)
     try {
-      const data = await getReports(startDate, endDate)
-      setReports(data)
-      setCurrentPage(1) // Yangi hisobot olinganda 1-sahifaga qaytish
-      toast.success(`Hisobot yuklandi: ${data.totalInvoices} ta chek`)
-    } catch (error) {
-      toast.error('Hisobotni yuklashda xatolik')
-      console.error(error)
+      const summaryData = await getReportSummary(
+        startDate,
+        endDate,
+        periodType as 'daily' | 'weekly' | 'monthly' | 'hourly'
+      )
+      setSummary(summaryData)
+      setTotalInvoices(summaryData?.totalInvoices ?? 0)
+
+      await loadTopProducts(startDate, endDate)
+
+      const response = await getReportInvoices(
+        startDate,
+        endDate,
+        1,
+        ITEMS_PER_PAGE
+      )
+
+      const firstPage = Array.isArray(response?.invoices) ? response.invoices : []
+      const hasMoreValue = response?.hasMore ?? false
+
+      setInvoices(firstPage)
+      setHasMore(hasMoreValue)
+      setPage(1)
+
+      toast.success(`Hisobot yuklandi: ${summaryData?.totalInvoices ?? 0} ta chek`)
+    } catch (err: any) {
+      console.error("Hisobot yuklash xatosi:", err)
+      toast.error(err.message || 'Hisobot yuklanmadi')
+      setTopProducts({
+        data: [{
+          productId: '',
+          name: '',
+          code: '',
+          price: 0,
+          measure: '',
+          stock: 0,
+          soldQuantity: 0,
+          totalRevenue: 0,
+        }],
+        period: {
+          startDate: '',
+          endDate: '',
+        },
+        success: false,
+        totalSales: 0,
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const getSalesData = () => {
-    const salesByDate: Record<string, { sales: number; count: number }> = {}
-
-    reports.invoices.forEach(invoice => {
-      const date = new Date(invoice.date).toLocaleDateString('ru-RU')
-      if (!salesByDate[date]) {
-        salesByDate[date] = { sales: 0, count: 0 }
-      }
-      salesByDate[date].sales += invoice.total
-      salesByDate[date].count += 1
-    })
-
-    return Object.entries(salesByDate).map(([date, data]) => ({
-      date,
-      sales: data.sales,
-      count: data.count,
-      formattedSales: data.sales.toLocaleString()
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  }
-
-  const getProductData = () => {
-    const productSales: Record<string, number> = {}
-
-    reports.invoices.forEach(invoice => {
-      invoice.items.forEach(item => {
-        if (!productSales[item.name]) {
-          productSales[item.name] = 0
-        }
-        productSales[item.name] += item.subtotal
+  const loadTopProducts = async (start: string, end: string) => {
+    try {
+      const data = await getTopSellingProducts(15, start, end)
+      setTopProducts(data)
+    } catch (error) {
+      console.error('Top products yuklanmadi:', error)
+      setTopProducts({
+        data: [{
+          productId: '',
+          name: '',
+          code: '',
+          price: 0,
+          measure: '',
+          stock: 0,
+          soldQuantity: 0,
+          totalRevenue: 0,
+        }],
+        period: {
+          startDate: '',
+          endDate: '',
+        },
+        success: false,
+        totalSales: 0,
       })
-    })
-
-    return Object.entries(productSales)
-      .map(([name, sales]) => ({ name, sales }))
-      .sort((a, b) => b.sales - a.sales)
-      .slice(0, 10)
-  }
-
-  const getHourlyData = () => {
-    const hourlySales: Record<number, number> = {}
-
-    for (let i = 8; i <= 22; i++) {
-      hourlySales[i] = 0
-    }
-
-    reports.invoices.forEach(invoice => {
-      const hour = new Date(invoice.date).getHours()
-      if (hour >= 8 && hour <= 22) {
-        hourlySales[hour] = (hourlySales[hour] || 0) + invoice.total
-      }
-    })
-
-    return Object.entries(hourlySales).map(([hour, sales]) => ({
-      hour: `${hour}:00`,
-      sales
-    }))
-  }
-
-  const getStats = () => {
-    const salesData = getSalesData()
-    const totalItems = reports.invoices.reduce((sum, inv) =>
-      sum + inv.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
-    )
-
-    const averageSale = reports.totalInvoices > 0 ? reports.totalSales / reports.totalInvoices : 0
-    const maxSale = reports.invoices.length > 0 ? Math.max(...reports.invoices.map(i => i.total)) : 0
-    const minSale = reports.invoices.length > 0 ? Math.min(...reports.invoices.map(i => i.total)) : 0
-    const profit = reports.invoices.reduce((sum, inv) => sum + (inv.profit || 0), 0)
-    let trend = 'stable'
-    if (salesData.length >= 2) {
-      const lastTwoDays = salesData.slice(-2)
-      if (lastTwoDays[1].sales > lastTwoDays[0].sales) trend = 'up'
-      if (lastTwoDays[1].sales < lastTwoDays[0].sales) trend = 'down'
-    }
-
-    return {
-      totalItems,
-      averageSale,
-      maxSale,
-      minSale,
-      profit,
-      trend,
-      salesData,
-      productData: getProductData(),
-      hourlyData: getHourlyData()
     }
   }
 
-  const stats = getStats()
 
-  const COLORS = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-    '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
-  ]
+  useEffect(() => {
+    if (startDate && endDate && summary) {
+      loadTopProducts(startDate, endDate)
+    }
+  }, [startDate, endDate])
+
+  const loadMoreInvoices = async () => {
+    if (!hasMore || loadingMore || !startDate || !endDate) return
+    setLoadingMore(true)
+
+    try {
+      const nextPage = page + 1
+      const response = await getReportInvoices(
+        startDate,
+        endDate,
+        nextPage,
+        ITEMS_PER_PAGE
+      )
+
+      const newInvoices = Array.isArray(response?.invoices) ? response.invoices : []
+      const stillMore = response?.hasMore ?? false
+
+      setInvoices(prev => [...prev, ...newInvoices])
+      setHasMore(stillMore)
+      setPage(nextPage)
+    } catch (err) {
+      console.error('Yana cheklar yuklanmadi', err)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const chartData = summary?.timeSeries?.map((item: any) => ({
+    date: item._id || item.date,           // _id ni date deb qayta nomlaymiz
+    sales: item.sales,
+    count: item.count
+  })) || []
+
+  console.log("Top products:", topProducts)
+
+  const getTrend = () => {
+    if (!summary?.timeSeries?.length || summary.timeSeries.length < 2) return 'stable'
+
+    const last = summary.timeSeries[summary.timeSeries.length - 1].sales
+    const prev = summary.timeSeries[summary.timeSeries.length - 2].sales
+
+    if (last > prev) return 'up'
+    if (last < prev) return 'down'
+    return 'stable'
+  }
+
+  const trend = getTrend()
 
   const downloadReport = () => {
     const content = `
@@ -272,17 +308,17 @@ HISOBOT TAFSILOTLARI
 Davr: ${startDate} dan ${endDate} gacha
 
 ASOSIY KO'RSATKICHLAR:
-• Jami Savdo: ${reports.totalSales.toLocaleString()} so'm
-• Jami Cheklar: ${reports.totalInvoices}
-• O'rtacha Chek: ${Math.round(stats.averageSale).toLocaleString()} so'm
-• Sotilgan Mahsulotlar: ${stats.totalItems} dona
-• Jami Profit: ${stats.profit.toLocaleString()} so'm
+• Jami Savdo: ${summary.totalSales.toLocaleString()} so'm
+• Jami Cheklar: ${summary.totalInvoices}
+• O'rtacha Chek: ${Math.round(summary.averageTicket).toLocaleString()} so'm
+• Sotilgan Mahsulotlar: ${summary.totalItems} dona
+• Jami Profit: ${summary.totalProfit.toLocaleString()} so'm
 
 KUNLIK SAVDO:
-${stats.salesData.map(d => `• ${d.date}: ${d.sales.toLocaleString()} so'm (${d.count} chek)`).join('\n')}
+${summary.timeSeries.map((d: any) => `• ${d.date}: ${d.sales.toLocaleString()} so'm (${d.count} chek)`).join('\n')}
 
 TOPSHIRIQLAR:
-${stats.productData.map(p => `• ${p.name}: ${p.sales.toLocaleString()} so'm`).join('\n')}
+${summary.topProducts.map((p: any) => `• ${p.name}: ${p.sales.toLocaleString()} so'm`).join('\n')}
 =============================================
 Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
     `
@@ -339,7 +375,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={downloadReport}
-                disabled={reports.invoices.length === 0}
+                disabled={invoices.length === 0}
                 className="px-4 py-3 bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed border border-gray-300 rounded-xl text-gray-700 flex items-center gap-2 transition-all shadow-sm hover:shadow"
               >
                 <Download size={18} />
@@ -357,6 +393,133 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                 )}
                 {loading ? 'Yuklanmoqda...' : 'Yangilash'}
               </button>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            {/* Jami savdo */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="flex flex-col h-full">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Jami savdo</p>
+                    <p className="text-2xl font-bold text-gray-900 truncate max-w-[140px]">
+                      {summary?.totalSales?.toLocaleString() ?? '0'}
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">so'm</p>
+                  </div>
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                    <DollarSign className="text-blue-600" size={18} />
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-3 flex items-center gap-2">
+                  {summary?.trend || trend === 'up' ? (
+                    <>
+                      <TrendingUp className="text-green-600" size={16} />
+                      <span className="text-sm text-green-600">O'sish</span>
+                    </>
+                  ) : summary?.trend || trend === 'down' ? (
+                    <>
+                      <TrendingDown className="text-red-600" size={16} />
+                      <span className="text-sm text-red-600">Pasayish</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">Barqaror</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Jami cheklar */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="flex flex-col h-full">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Jami cheklar</p>
+                    <p className="text-2xl font-bold text-gray-900 truncate max-w-[140px]">
+                      {summary?.totalInvoices?.toLocaleString() ?? '0'}
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">ta operatsiya</p>
+                  </div>
+                  <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
+                    <FileText className="text-green-600" size={18} />
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-3">
+                  <p className="text-gray-500 text-sm truncate">
+                    O'rtacha: {Math.round(summary?.averageTicket ?? 0).toLocaleString()} so'm
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sotilgan mahsulot */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="flex flex-col h-full">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Sotilgan mahsulot</p>
+                    <p className="text-2xl font-bold text-gray-900 truncate max-w-[140px]">
+                      {summary?.totalItems ? summary?.totalItems?.toFixed(1).toLocaleString() : '0'}
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">dona</p>
+                  </div>
+                  <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                    <Package className="text-purple-600" size={18} />
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-3">
+                  <p className="text-gray-500 text-sm truncate">
+                    Kuniga: {summary?.totalItems && summary?.totalInvoices ? Math.round(summary?.totalItems / (summary?.totalInvoices ?? 1)) : 0} dona
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="flex flex-col h-full">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Faollik</p>
+                    <p className="text-2xl font-bold text-gray-900 truncate max-w-[140px]">
+                      {summary?.timeSeries?.length > 0
+                        ? Math.round((summary.timeSeries.length / (summary.totalInvoices || 1)) * 100)
+                        : 0}%
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">kunlarda savdo</p>
+                  </div>
+                  <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+                    <ShoppingCart className="text-amber-600" size={18} />
+                  </div>
+                </div>
+                <div className="mt-auto pt-3">
+                  <p className="text-gray-500 text-sm truncate">
+                    {summary?.timeSeries?.length || 0} kun faol
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Foyda */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="flex flex-col h-full">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Foyda</p>
+                    <p className="text-2xl font-bold text-gray-900 truncate max-w-[140px]">
+                      {summary?.totalProfit?.toLocaleString() ?? '0'}
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">so'm</p>
+                  </div>
+                  <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
+                    <DollarSign className="text-emerald-600" size={18} />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -394,7 +557,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Davr Turi
+                Davr turi
               </label>
               <select
                 value={periodType}
@@ -411,7 +574,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Boshlanish Sanasi
+                Boshlanish sanasi
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -501,103 +664,6 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Jami Savdo</p>
-                <p className="text-2xl font-bold text-gray-900">{reports.totalSales.toLocaleString()}</p>
-                <p className="text-gray-500 text-xs">so'm</p>
-              </div>
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <DollarSign className="text-blue-600" size={20} />
-              </div>
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              {stats.trend === 'up' ? (
-                <TrendingUp className="text-green-600" size={16} />
-              ) : stats.trend === 'down' ? (
-                <TrendingDown className="text-red-600" size={16} />
-              ) : null}
-              <span className={`text-sm ${stats.trend === 'up' ? 'text-green-600' :
-                stats.trend === 'down' ? 'text-red-600' : 'text-gray-500'
-                }`}>
-                {stats.trend === 'up' ? 'O\'sish' : stats.trend === 'down' ? 'Pasayish' : 'Barqaror'}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Jami Cheklar</p>
-                <p className="text-2xl font-bold text-gray-900">{reports.totalInvoices}</p>
-                <p className="text-gray-500 text-xs">ta operatsiya</p>
-              </div>
-              <div className="p-2 bg-green-100 rounded-lg">
-                <FileText className="text-green-600" size={20} />
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-gray-500 text-sm">
-                O'rtacha: {Math.round(stats.averageSale).toLocaleString()} so'm
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Sotilgan Mahsulot</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalItems}</p>
-                <p className="text-gray-500 text-xs">dona</p>
-              </div>
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Package className="text-purple-600" size={20} />
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-gray-500 text-sm">
-                Kuniga: {Math.round(stats.totalItems / (reports.invoices.length || 1))} dona
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Faollik</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {reports.invoices.length > 0 ? Math.round(stats.salesData.length / reports.totalInvoices * 100) : 0}%
-                </p>
-                <p className="text-gray-500 text-xs">kunlarda savdo</p>
-              </div>
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <ShoppingCart className="text-amber-600" size={20} />
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-gray-500 text-sm">
-                {stats.salesData.length} kun faol
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-            <div className="col-span-1 sm:col-span-1 lg:col-span-1">
-              <div>
-                <p className="text-gray-600 text-sm mb-1">Foyda</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.profit.toLocaleString()}</p>
-                <p className="text-gray-500 text-xs">so'm</p>
-              </div>
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <DollarSign className="text-emerald-600" size={20} />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Sales Chart */}
@@ -613,12 +679,22 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             </div>
 
             <div className="h-80 w-full overflow-hidden">
-              {reports.invoices.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+              {summary?.timeSeries?.length ? (
+                <ResponsiveContainer width="100%" height="100%">
                   {chartType === 'bar' ? (
-                    <RechartsBarChart data={stats.salesData}>
+                    <RechartsBarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+                      <XAxis
+                        dataKey="date"
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tickFormatter={(value) =>
+                          new Date(value).toLocaleDateString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit'
+                          })
+                        }
+                      />
                       <YAxis stroke="#6b7280" fontSize={12} />
                       <Tooltip
                         contentStyle={{
@@ -633,9 +709,20 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                       <Bar dataKey="sales" name="Savdo" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                     </RechartsBarChart>
                   ) : chartType === 'line' ? (
-                    <RechartsLineChart data={stats.salesData}>
+                    <RechartsLineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
+                      <XAxis
+                        dataKey="date"
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tickFormatter={(value) =>
+                          new Date(value).toLocaleDateString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })
+                        }
+                      />
                       <YAxis stroke="#6b7280" fontSize={12} />
                       <Tooltip
                         contentStyle={{
@@ -660,16 +747,16 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                   ) : (
                     <RechartsPieChart>
                       <Pie
-                        data={stats.productData}
+                        data={topProducts?.data}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
                         label={(entry) => entry.name}
                         outerRadius={80}
                         fill="#8884d8"
-                        dataKey="sales"
+                        dataKey="totalRevenue"
                       >
-                        {stats.productData.map((entry, index) => (
+                        {topProducts?.data.map((entry: any, index: any) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -704,7 +791,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <Package className="text-green-600" size={24} />
-                <h2 className="text-xl font-bold text-gray-900">Mahsulotlar Reytingi</h2>
+                <h2 className="text-xl font-bold text-gray-900">Mahsulotlar reytingi</h2>
               </div>
               <div className="text-sm text-gray-600">
                 Eng ko'p sotilgan
@@ -712,9 +799,9 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
             </div>
 
             <div className="space-y-4">
-              {stats.productData.length > 0 ? (
-                stats.productData.slice(0, 5).map((product, index) => (
-                  <div key={product.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+              {topProducts?.data?.length > 0 ? (
+                topProducts?.data?.slice(0, 5).map((product: any, index: any) => (
+                  <div key={product.productId} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${index === 0 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
                         index === 1 ? 'bg-gray-100 text-gray-600 border border-gray-300' :
@@ -724,13 +811,13 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                         <span className="font-bold">{index + 1}</span>
                       </div>
                       <div>
-                        <p className="text-gray-900 font-medium truncate max-w-[200px]">{product.name}</p>
-                        <p className="text-gray-600 text-sm">{product.sales.toLocaleString()} so'm</p>
+                        <p className="text-gray-900 font-medium truncate max-w-[200px]">{product?.name}</p>
+                        <p className="text-gray-600 text-sm">{product?.totalRevenue.toLocaleString()} so'm</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-green-600 font-bold">
-                        {Math.round((product.sales / reports.totalSales) * 100)}%
+                        {Math.round((product?.totalRevenue / summary?.totalSales) * 100)}%
                       </div>
                       <div className="text-gray-500 text-sm">jami savdoda</div>
                     </div>
@@ -746,35 +833,31 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               )}
             </div>
 
-            {/* Hourly Sales */}
             <div className="mt-8">
               <h3 className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
                 <Clock size={18} className="text-teal-600" />
                 Soatlik savdo
               </h3>
               <div className="h-48">
-                {reports.invoices.length > 0 ? (
+                {summary?.hourly?.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <RechartsBarChart data={stats.hourlyData}>
+                    <RechartsBarChart data={summary.hourly}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="hour" stroke="#6b7280" fontSize={12} />
                       <YAxis stroke="#6b7280" fontSize={12} />
                       <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px',
-                          color: '#374151',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                        }}
                         formatter={(value: number) => [`${value.toLocaleString()} so'm`, 'Savdo']}
                       />
-                      <Bar dataKey="sales" name="Savdo" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="sales" fill="#10b981" radius={[4, 4, 0, 0]} />
                     </RechartsBarChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full flex items-center justify-center">
-                    <p className="text-gray-400">Soatlik ma'lumotlar mavjud emas</p>
+                    <p className="text-gray-400">
+                      {periodType === 'hourly'
+                        ? "Soatlik ma'lumotlar hali yuklanmadi"
+                        : "Soatlik tahlil faqat kunlik davrda mavjud emas"}
+                    </p>
                   </div>
                 )}
               </div>
@@ -792,7 +875,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600">
-                  {displayedInvoices.length} / {reports.invoices.length} ta chek
+                  {invoices.length} ta chek
                 </span>
                 <button
                   onClick={() => setExpandedView(!expandedView)}
@@ -827,7 +910,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                       <p className="mt-4 text-gray-400">Hisobot yuklanmoqda...</p>
                     </td>
                   </tr>
-                ) : displayedInvoices.length === 0 ? (
+                ) : invoices.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 md:px-6 py-12 text-center">
                       <BarChart3 className="mx-auto text-gray-300 mb-4" size={48} />
@@ -838,7 +921,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                     </td>
                   </tr>
                 ) : (
-                  displayedInvoices.map((invoice) => (
+                  invoices.map((invoice) => (
                     <tr
                       key={invoice._id}
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -881,8 +964,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
               </tbody>
             </table>
 
-            {/* Loading More Indicator */}
-            {displayedInvoices.length > 0 && displayedInvoices.length < reports.invoices.length && (
+            {hasMore && (
               <div ref={observerTarget} className="py-6 text-center border-t border-gray-200">
                 {loadingMore ? (
                   <div className="flex items-center justify-center gap-2 text-gray-600">
@@ -891,17 +973,17 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
                   </div>
                 ) : (
                   <div className="text-gray-500 text-sm">
-                    Pastga tushing yoki kuting...
+                    Pastga tushing...
                   </div>
                 )}
               </div>
             )}
 
             {/* End of List */}
-            {displayedInvoices.length > 0 && displayedInvoices.length === reports.invoices.length && (
+            {invoices.length > 0 && invoices.length === totalInvoices && (
               <div className="py-6 text-center border-t border-gray-200">
                 <div className="text-gray-500 text-sm">
-                  Barcha {reports.invoices.length} ta chek ko'rsatilmoqda
+                  Barcha {invoices.length} ta chek ko'rsatilmoqda
                 </div>
               </div>
             )}
@@ -913,7 +995,7 @@ Yaratilgan: ${new Date().toLocaleString('uz-UZ')}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               Hisobot davri: {new Date(startDate).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })} - {new Date(endDate).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })} •
-              {reports.invoices.length > 0 && ` Oxirgi yangilanish: ${new Date(reports.invoices[0].date).toLocaleString('ru-RU')}`}
+              {invoices.length > 0 && ` Oxirgi yangilanish: ${new Date(invoices[0].date).toLocaleString('ru-RU')}`}
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
