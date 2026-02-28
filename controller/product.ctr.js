@@ -1,6 +1,6 @@
 const Product = require("../schema/product.schema");
 const BaseError = require("../utils/BaseError");
-const { clearCacheByPrefix } = require("../redis");
+const { clearCacheByPrefix } = require("../middleware/cacheMiddleware");
 
 async function getAllProducts(req, res, next) {
     try {
